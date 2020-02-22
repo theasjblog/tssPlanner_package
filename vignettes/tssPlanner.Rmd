@@ -1,0 +1,251 @@
+---
+title: "tssPlanner"
+author: "Adrian Joseph"
+output: 
+  html_document:
+    toc: true
+    toc_depth: 3
+    collapsed: true
+    smooth_scroll: true
+    number_sections: true
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Aim
+
+TSS is the training stress score as defined by [Joe Friel](https://www.trainingpeaks.com/blog/applying-the-numbers-part-2-training-stress-score/). The main idea behind it is that, for a given week, the total TSS of all your sessions should meet a pre-defined target.
+
+This tool automates the task of estimating your TSS for each session and for a full week.
+
+# TSS estimation
+
+The TSS for a session can be calculated as
+
+$$TSS = 100*IF^2*t_{[h]}$$
+Where IF is the Intensity factor and t is the time in hours. The intensity factor can be defined for bike sessions (using a power meter) as:
+
+$$IF_{b} = \frac{target\ effort}{reference\ threshold}$$
+
+$$IF_{r/w} = \frac{reference\ threshold}{target\ effort}$$
+This is because, in simple term, the higher your power on the bike the harder you cycle, while the faster (therefore smaller number) you pace when swimming or running then that harder you go.
+
+# Notes
+
+* The tool will work equally in min/km, min/mil, min/100m or min/100yards
+* The tool assumes you know your threshold values for any of the sports you intend to use
+* If you do not know your threshold values, you can still use the tool by providing a fixed TSS
+
+# Usage
+
+## Set threshold values:
+
+First we set some user threshold values. Note that we will set reference values for all three sports, but you can set any of the three. If you only want to use manually calculated TSS you can skip this session. Note that if we do not give the optional argument `userSettings` the command will generate a new user settings object, containing only the specified sport.
+
+```{r userSettings}
+library('tssPlanner')
+
+#add a swim threshold to settings
+mySettings <- addThreshold(sport = 'swim', metric = 'pace', value = '1:30')
+#add a FTP to settings
+mySettings <- addThreshold(sport = 'bike', metric = 'power', value = 250,
+                           userSettings = mySettings)
+#add a run threshold to settings
+mySettings <- addThreshold(sport = 'run', metric = 'pace', value = '4:30',
+                           userSettings = mySettings)
+
+summary(mySettings)
+
+```
+
+## Create a new weekly training plan
+
+The user settings can now be stored in a weekly plan:
+
+```{r weeklyPlan}
+newPlan <- storeSettings(mySettings)
+
+```
+
+## Create a training session
+
+Now that we have the settings, we can create training sessions. We create a 60min run session with 40min at 4:50 and 20min at 4:20
+
+```{r trainingSession}
+runSession <- createSession(sport = 'run', metric = 'pace', minTargetZ = c(40, 20),
+                            targetZ = c('4:50', '4:30'),
+                            userSettings =  mySettings,
+                            description = 'making a run test session')
+
+cat(summary(runSession)$text)
+summary(runSession)$details
+```
+
+
+The new session can be added to the plan. We will add this session to Thursday, and it will be our second session for the day:
+
+```{r addSession1}
+newPlan <- addSessionToPlan(weeklyPlan = newPlan, session = runSession,
+                            day = 'thursday')
+
+cat(summary(newPlan))
+```
+
+
+## Add another session to the plan
+
+Let's add a 60min bike session at 250W to our plan. We plan the session for Monday:
+
+```{r addSession2}
+bikeSession <- createSession(sport = 'bike', metric = 'power', minTargetZ = 60, targetZ = 250,
+                             userSettings = slot(newPlan, 'userSettings'),
+                             description = 'making a bike test session')
+
+newPlan <- addSessionToPlan(newPlan, session = bikeSession,
+                            day = 'monday')
+
+cat(summary(newPlan))
+```
+
+
+## Add a manual session
+
+If you do not know you threshold values, or simply want to input a session using only a known TSS value, you can use the function `createSession()` and specify the estimated TSS for the session. Here we create a run session with TSS of 80. We then add the session to Friday.
+
+```{r manualTSS}
+manualRunSession <- createSession(sport = 'run', TSS = 80, description = 'making a run test session')
+
+newPlan <- addSessionToPlan(newPlan, session = manualRunSession,
+                            day = 'friday')
+
+cat(summary(newPlan))
+```
+
+
+## Remove a session
+
+A session can be removed with the function `deleteSession()`. Let's delete the Friday session. Note that you must specify which session you intend to delete.
+
+```{r deleteSession}
+newPlan <- deleteSession(weeklyPlan = newPlan, day = 'friday', sessionNumber = 1)
+
+#summary after deletion
+cat(summary(newPlan))
+```
+
+## Swap two session
+
+We can also swap two sessions with each other. Let's swap the Monday session with the Thursday session.
+
+```{r reschedule}
+#the replace = TRUE ensure that we replace the 'from' session with an empty session
+newPlan <- moveSession(weeklyPlan = newPlan, fromDay = 'monday',
+                       fromSessionNumber = 1, toDay = 'thursday',
+                       toSessionNumber = 1, swap = TRUE)
+
+cat(summary(newPlan))
+```
+
+## Reschedule sessions
+
+A single session can be rescheduled to another day. Let's reschedule the Monday bike session to Wednesday.
+
+```{r swap}
+#the replace = FALSE ensure that we replace the 'from' session with the 'to' session
+newPlan <- moveSession(weeklyPlan = newPlan, fromDay = 'monday',
+                       fromSessionNumber = 1, toDay = 'wednesday',
+                       swap = FALSE)
+
+cat(summary(newPlan))
+```
+
+### More examples for swapping/rescheduling sessions
+
+```{r swap2}
+# move wednesday sessison to thursday 
+newPlan <- moveSession(weeklyPlan = newPlan, fromDay = 'wednesday',
+                       fromSessionNumber = 1, toDay = 'thursday',
+                       swap = FALSE)
+
+cat(summary(newPlan))
+
+```
+
+```{r swap3}
+#create a new session
+manualSwimSession <- createSession(sport = 'swim', TSS = 80, description = 'making a run test session')
+
+# add it to wednesday
+newPlan <- addSessionToPlan(newPlan, session = manualSwimSession,
+                            day = 'wednesday')
+# swap the first sesison of wednesday with the first session on thursday
+newPlan <- moveSession(weeklyPlan = newPlan, fromDay = 'wednesday',
+                       fromSessionNumber = 1, toDay = 'thursday',
+                       toSessionNumber = 1,
+                       swap = TRUE)
+cat(summary(newPlan))
+```
+                          
+## Change user settings
+
+We can change user settings even after we calculated the TSS for our plan. All we need to do is to create new settings and place them in our plan. The package will automatically recalculate all the TSS in the plan **WITH THE EXCEPTION OF THE SESSION THAT WERE ADDED USING MANUAL TSS**.
+
+In this example we will change the FTP from 250 to 280
+
+```{r changeSettings, warning=FALSE}
+#create a new session
+manualBikeSession <- createSession(sport = 'bike', TSS = 80, description = 'making a bike manual session')
+
+# add it to friday
+newPlan <- addSessionToPlan(newPlan, session = manualBikeSession,
+                            day = 'friday')
+
+#input a new ftp
+newSettings <- addThreshold(sport = 'bike', metric = 'power', value = 280, userSettings = slot(newPlan, 'userSettings'))
+
+#and now we can put back our updated settings in the weekly plan:
+newPlan <- storeSettings(userSettings = newSettings, weeklyPlan = newPlan)
+
+#Let's check the change
+summary(newPlan@userSettings)
+
+#and the change in TSS for the plan
+cat(summary(newPlan))
+```
+
+Note how the TSS has changed for the bike session on Wednesday, as we gave target training zones, but not for the bike session on Friday which we created using a manual TSS.
+
+
+
+## Display a table or a plot the weekly TSS plan
+
+The *summary* method gives us a verbose description of all our sessions. We can also summarize the results by making a table or a plot.
+
+### Table
+
+```{r table}
+#add some more manula TSS sessions
+newPlan <- addSessionToPlan(weeklyPlan = newPlan, session = createSession(sport = 'swim', TSS = 120),
+                           day = 'tuesday')
+
+newPlan <- addSessionToPlan(newPlan, session = createSession(sport = 'bike', TSS = 80),
+                           day = 'saturday')
+
+newPlan <- addSessionToPlan(newPlan, session = createSession(sport = 'run', TSS = 92),
+                           day = 'sunday')
+
+weeklyTable <- tableOfTss(newPlan)
+
+library(knitr)
+kable(weeklyTable)
+```
+
+### Plot
+
+```{r plot, fig.height = 3, fig.width = 8}
+plot(newPlan)
+```
+
