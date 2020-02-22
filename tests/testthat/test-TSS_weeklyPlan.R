@@ -1,6 +1,7 @@
 context('weeklyPlan')
 
 test_that("weeklyPlan_is_Right",{
+  skip('TBC')
   #add a run threshold to settings
   mySettings <- addThreshold(sport = 'run', metric = 'pace', value = '4:30')
    
@@ -83,6 +84,7 @@ test_that("moveASession",{
 
 
 test_that("removeASession",{
+  skip('TBC')
   skip('skipping as not completed')
   mySettings <- setSwimThreshold('1:30')
   #add a FTP to settings

@@ -13,6 +13,7 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(knitr)
 ```
 
 # Aim
@@ -57,7 +58,7 @@ mySettings <- addThreshold(sport = 'bike', metric = 'power', value = 250,
 mySettings <- addThreshold(sport = 'run', metric = 'pace', value = '4:30',
                            userSettings = mySettings)
 
-summary(mySettings)
+kable(summary(mySettings))
 
 ```
 
@@ -75,13 +76,15 @@ newPlan <- storeSettings(mySettings)
 Now that we have the settings, we can create training sessions. We create a 60min run session with 40min at 4:50 and 20min at 4:20
 
 ```{r trainingSession}
-runSession <- createSession(sport = 'run', metric = 'pace', minTargetZ = c(40, 20),
-                            targetZ = c('4:50', '4:30'),
+runSession <- createSession(sport = list('run'),
+                            metric = list('pace'),
+                            minTargetZ = list(c(40, 20)),
+                            targetZ = list(c('4:50', '4:30')),
+                            TSS = list(NA),
                             userSettings =  mySettings,
                             description = 'making a run test session')
 
-cat(summary(runSession)$text)
-summary(runSession)$details
+kable(summary(runSession))
 ```
 
 
@@ -100,7 +103,8 @@ cat(summary(newPlan))
 Let's add a 60min bike session at 250W to our plan. We plan the session for Monday:
 
 ```{r addSession2}
-bikeSession <- createSession(sport = 'bike', metric = 'power', minTargetZ = 60, targetZ = 250,
+bikeSession <- createSession(sport = list('bike'), metric = list('power'),
+                             minTargetZ = list(60), targetZ = list(250),
                              userSettings = slot(newPlan, 'userSettings'),
                              description = 'making a bike test session')
 
@@ -116,7 +120,7 @@ cat(summary(newPlan))
 If you do not know you threshold values, or simply want to input a session using only a known TSS value, you can use the function `createSession()` and specify the estimated TSS for the session. Here we create a run session with TSS of 80. We then add the session to Friday.
 
 ```{r manualTSS}
-manualRunSession <- createSession(sport = 'run', TSS = 80, description = 'making a run test session')
+manualRunSession <- createSession(sport = list('run'), TSS = list(80), description = 'making a run test session')
 
 newPlan <- addSessionToPlan(newPlan, session = manualRunSession,
                             day = 'friday')
@@ -124,6 +128,45 @@ newPlan <- addSessionToPlan(newPlan, session = manualRunSession,
 cat(summary(newPlan))
 ```
 
+## Brick (multisport) sessions
+
+The tool allows to input brick (multisport) sessions. Those are session where the athlete alternates between 2 or more sports within tha same session.
+
+A typical example is a run/bike session.
+
+In this example, we will create a session where we do some run warm up, followed by run threshold run, followed by bike threshold run and then again run threshold. We finish with a bike cool down.
+
+```{r brickSession, warning=FALSE}
+brickSessions <- createSession(sports = list('run',
+                                               'bike',
+                                               'run',
+                                               'bike'),
+                               metrics = list('pace',
+                                                'power',
+                                                'pace',
+                                                'power'),
+                               minTargetZs = list(c(10, 30),
+                                                  45,
+                                                  15,
+                                                  10),
+                               targetZs = list(c('5:00', '4:30'),
+                                               250,
+                                               '4:30',
+                                               180),
+                               TSS = list(NA,
+                                          NA,
+                                          NA,
+                                          NA),
+                               userSettings = slot(newPlan, 'userSettings'),
+                               description = 'a brick session')
+
+
+#add it to the plan
+newPlan <- addSessionToPlan(weeklyPlan = newPlan,
+                            session = brickSessions,
+                            day = 'sunday')
+kable(summary(brickSessions))
+```
 
 ## Remove a session
 
@@ -210,7 +253,7 @@ newSettings <- addThreshold(sport = 'bike', metric = 'power', value = 280, userS
 newPlan <- storeSettings(userSettings = newSettings, weeklyPlan = newPlan)
 
 #Let's check the change
-summary(newPlan@userSettings)
+kable(summary(slot(newPlan, 'userSettings')))
 
 #and the change in TSS for the plan
 cat(summary(newPlan))
@@ -227,19 +270,21 @@ The *summary* method gives us a verbose description of all our sessions. We can 
 ### Table
 
 ```{r table}
-#add some more manula TSS sessions
-newPlan <- addSessionToPlan(weeklyPlan = newPlan, session = createSession(sport = 'swim', TSS = 120),
+#add some more manual TSS sessions
+newPlan <- addSessionToPlan(weeklyPlan = newPlan, session = createSession(sport = list('swim'),
+                                                                          TSS = list(120)),
                            day = 'tuesday')
 
-newPlan <- addSessionToPlan(newPlan, session = createSession(sport = 'bike', TSS = 80),
+newPlan <- addSessionToPlan(newPlan, session = createSession(sport = list('bike'),
+                                                             TSS = list(80)),
                            day = 'saturday')
 
-newPlan <- addSessionToPlan(newPlan, session = createSession(sport = 'run', TSS = 92),
+newPlan <- addSessionToPlan(newPlan, session = createSession(sport =list('run'),
+                                                             TSS = list(92)),
                            day = 'sunday')
 
 weeklyTable <- tableOfTss(newPlan)
 
-library(knitr)
 kable(weeklyTable)
 ```
 

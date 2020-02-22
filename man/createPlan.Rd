@@ -4,8 +4,12 @@
 \alias{createPlan}
 \title{Create a new weekly plan}
 \usage{
-#newPlan <- createPlan()
+createPlan()
 }
 \description{
 Create a new weekly training plan with no sessions
+}
+\examples{
+newPlan <- createPlan()
+
 }

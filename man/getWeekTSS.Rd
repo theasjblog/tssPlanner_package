@@ -4,21 +4,28 @@
 \alias{getWeekTSS}
 \title{Get total weekly TSS}
 \usage{
-##set the swim threshold to 1:30
-#mySwimTh <- setSwimThreshold('1:30')
-
-##create a swim session
-#newSession <- createSession(c(20, 30), c('1:20', '1:40'), mySwimTh, 'making a test session')
-
-##create the plan
-#newPlan <- addSessionToPlan(weeklyPlan = NULL, session = newSession, day = 'monday', sessionNumber = 2)
-
-##get the totalTSS
-#getWeekTSS(weeklyPlan)
+getWeekTSS(weeklyPlan)
 }
 \arguments{
 \item{weeklyPlan}{(weekPlan) An object with the weekly training plan. If NULL, a new one will be created}
 }
 \description{
 Get total weekly TSS
+}
+\examples{
+##set the run threshold to 4:30
+myThreshold <- addThreshold(sport = 'run', metric = 'pace', value = '4:30')
+##set the bike threshold to 250
+myThreshold <- addThreshold(sport = 'bike', metric = 'power', value = 250, userSettings = myThreshold)
+##create a brick session
+newSession <- createSession(sports=list('run', 'bike'),
+                           minTargetZ = list(c(20, 30), 60), targetZ = list(c('4:20', '4:40'), 250),
+                           metric = list('pace', 'power'), userSettings = myThreshold, TSS = list(NA, NA),
+                           description = 'making a test session')
+# create a new plan
+newPlan <- storeSettings(myThreshold)
+##add to the plan monday
+newPlan <- addSessionToPlan(weeklyPlan = newPlan, session = newSession, day = 'monday')
+##get the totalTSS
+getWeekTSS(newPlan)
 }

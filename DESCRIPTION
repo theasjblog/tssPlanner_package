@@ -6,7 +6,7 @@ Author: Who wrote it
 Maintainer: The package maintainer <yourself@somewhere.net>
 Description: More about what it does (maybe more than one line)
     Use four spaces when indenting paragraphs within the Description.
-Imports: stringr, methods
+Imports: stringr, methods, dplyr, ggplot2
 Suggests: knitr, rmarkdown, testthat
 VignetteBuilder: knitr
 License: GPL-3

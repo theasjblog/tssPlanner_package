@@ -4,19 +4,18 @@
 \alias{moveSession}
 \title{Reschedule a session within a plan}
 \usage{
-##set the swim threshold to 1:30
-#mySwimTh <- setSwimThreshold('1:30')
-
-##create a swim session
-#newSession <- createSession(c(20, 30), c('1:20', '1:40'), mySwimTh, 'making a test session')
-
-##create the plan
-#newPlan <- addSessionToPlan(weeklyPlan = NULL, session = newSession, day = 'monday', sessionNumber = 2)
-
-##move the session
-#newPlan <- moveSession(weeklyPlan, 'monday', 2, 'tuesday', 1)
+moveSession(
+  weeklyPlan,
+  fromDay,
+  fromSessionNumber,
+  toDay,
+  toSessionNumber = NA,
+  swap = TRUE
+)
 }
 \arguments{
+\item{weeklyPlan}{(weekPlan) An object with the weekly training plan. If NULL, a new one will be created}
+
 \item{fromDay}{(character) The day of the week where the training session  was scheduled}
 
 \item{fromSessionNumber}{(numeric) The session number for fromDay, 1 or 2}
@@ -25,10 +24,34 @@
 
 \item{toSessionNumber}{(numeric) The session number for that toDay, 1 or 2}
 
-\item{replace}{(logic) If TRUE, replace the TO session with the FROM and the FROM with an epty session, if FALSE swaps sessions.}
-
-\item{weekPlan}{(weekPlan) An object with the weekly training plan. If NULL, a new one will be created}
+\item{swap}{(logic) If TRUE, replace the TO session with the FROM and the FROM with an epty session, if FALSE swaps sessions.}
 }
 \description{
 Add a training session to a new or existing weekly plan
+}
+\examples{
+##set the run threshold to 4:30
+myThreshold <- addThreshold(sport = 'run', metric = 'pace', value = '4:30')
+##set the bike threshold to 250
+myThreshold <- addThreshold(sport = 'bike', metric = 'power', value = 250, userSettings = myThreshold)
+##create a brick session
+newSession <- createSession(sports=list('run', 'bike'),
+                           minTargetZ = list(c(20, 30), 60), targetZ = list(c('4:20', '4:40'), 250),
+                           metric = list('pace', 'power'), userSettings = myThreshold, TSS = list(NA, NA),
+                           description = 'making a test session')
+# create a new plan
+newPlan <- storeSettings(myThreshold)
+##add to the plan monday
+newPlan <- addSessionToPlan(weeklyPlan = newPlan, session = newSession, day = 'monday')
+newSession <- createSession(sports=list('swim'),
+                           minTargetZ = list(NA), targetZ = list(NA),
+                           metric = list(NA), userSettings = myThreshold, TSS = list(80),
+                           description = 'making a swim session')
+newPlan <- addSessionToPlan(weeklyPlan = newPlan, session = newSession, day = 'sunday')
+# swap sessions
+newPlan <- moveSession(weeklyPlan = newPlan, fromDay = 'monday', fromSessionNumber = 1,
+toDay = 'sunday', toSessionNumber = 1, swap = TRUE)
+# move a single session
+newPlan <- moveSession(weeklyPlan = newPlan, fromDay = 'monday', fromSessionNumber = 1,
+toDay = 'tuesday', swap = FALSE)
 }

@@ -1,81 +1,111 @@
 #' Create a new training session
-#'
+#' @title createSession
 #' @description Function to set up a user swim threshold
-#' @param minTargetZ (numeric) Number of a minutes at a specified intensity
-#' @param targetZ (numeric, character) The session intensity for the minutes specified. Numeric for type = bike, character otherwise
-#' @param sport (character) One of the sports: bike, run, swim
+#' @param minTargetZs (list) Number of a minutes at a specified intensity for each sport/session
+#' @param targetZs (list) The session intensity for the minutes specified. Numeric for type = bike, character otherwise
+#' @param sports (list) One of the sports: bike, run, swim
 #' @param description (character) Optional session description. If NULL, it will be set to the type
 #' @param userSettings (userSettings) an object of class userSettings
-#' @param TSS (numeric) the known TSS for the session. If this is given (and is not NA (default))
-#' it will be used to determine the session TSS, even if intervals are given.
-#' @param metric (character) One of 'power', 'pace', 'HR'
+#' @param TSS (list) the known TSS for the session. If this is given (and is not NA (default))
+#' it will be used to set the session TSS, even if intervals are given.
+#' @param metrics (list) One of 'power', 'pace', 'HR'
+#' @examples
+#' ##set the run threshold to 4:30
+#' myThreshold <- addThreshold(sport = 'run', metric = 'pace', value = '4:30')
+#' ##set the bike threshold to 250
+#' myThreshold <- addThreshold(sport = 'bike', metric = 'power', value = 250, userSettings = myThreshold)
 #'
-#' @usage
-#' ##set the swim threshold to 1:30
-#' #myThreshold <- addThreshold(sport = 'swim', type = 'pace', value = '1:30')
-#'
-#' ##create a swim session
-#' #newSession <- createSession(minTargetZ = c(20, 30), targetZ = c('1:20', '1:40'),
-#' metric = 'pace', userSettings = myThreshold, type = 'swim',
+#' ##create a brick session
+#' newSession <- createSession(sports=list('run', 'bike'),
+#' minTargetZ = list(c(20, 30), 60), targetZ = list(c('1:20', '1:40'), 250),
+#' metric = list('pace', 'power'), userSettings = myThreshold, TSS = list(NA, NA),
 #' description = 'making a test session')
 #' @export
-createSession <- function(sport, metric = NA, minTargetZ = NA, targetZ = NA,
-                          userSettings = NA, TSS = NA, description = NULL){
+createSession <- function(sports, metrics = list(NA), minTargetZs = list(NA), targetZs = list(NA),
+                               userSettings = NA, TSS = list(NA), description = ''){
   
-  #errMessage <- validateCreateSession(sport, metric, minTargetZ, targetZ,
-  #                                    userSettings, TSS, description)
-  #if (errMessage != ''){
-  #  stop(errMessage)
-  #}
+  
+  sessions <- lapply(seq_along(sports), function(d){
+    
+    # get the needed input
+    thisTSS <- TSS[[d]]
+    thisSport <- sports[[d]]
+    thisMetric <- metrics[[d]]
+    thisTargetZ <- targetZs[[d]]
+    thisMinTargetZ <- minTargetZs[[d]]
+    
+    #the target Z in number format
+    targetZDec <- validateTimes(thisMetric, thisTargetZ)
+    
+    if(class(userSettings) == 'userSettings'){
+      reference <- slot(userSettings, 'settings') %>% 
+        filter(metric == thisMetric & sport == thisSport) %>% 
+        select(value)
+    } else {
+      reference <- data.frame()
+    }
+    
+    
+    # TSS not given: calculate it
+    if(is.na(thisTSS)){
+      #need to find the threshold for the combination of sport/metric
+      
+      
+      if (nrow(reference) != 1){
+        stop(paste0('Threshold not found for the combination ',
+                    thisSport, '/', thisMetric))
+      }
+      
+      thisTSS <- getTSS(thisMinTargetZ, targetZDec, reference$value, thisMetric)
+      manualTSS <- FALSE
+    
+    } else {
+      # use user TSS
+      manualTSS <- TRUE
+      if (length(thisTargetZ) == 0){
+        nIntervals <- 1
+      } else {
+        nIntervals <- length(thisTargetZ)
+      }
+      thisTSS <- rep(thisTSS/nIntervals, nIntervals)
+      
+      if (nrow(reference) == 0){
+        reference <- data.frame(value = rep(NA, nIntervals))
+      }
+      
+      if(is.na(thisMetric)){
+        thisMetric <- rep(NA_character_, nIntervals)
+      }
+      
+    }
+    
+ 
+    # get the table session details
+    sessionDetails <- getSessionDetails(sport = thisSport,
+                                        metric = thisMetric,
+                                        minutes = thisMinTargetZ,
+                                        target = targetZDec,
+                                        threshold = reference$value,
+                                        TSS = thisTSS,
+                                        manualTSS = manualTSS)
+    
+    # create and populate session
+    newSession <- new('singleSportSession')
+    slot(newSession, 'metric') <- thisMetric
+    slot(newSession, 'TSS') <- sum(sessionDetails$TSS)
+    slot(newSession, 'sport') <- thisSport
+    slot(newSession, 'manualTSS') <- manualTSS
+    slot(newSession, 'sessionDetails') <-sessionDetails
+    
+    return(newSession)
+  })
+  
   
   newSession <- new('session')
-  
-  
-  
-  
-  if(is.na(TSS)){
-    idx <- which(slot(userSettings, 'settings')$sport == sport &
-                   slot(userSettings, 'settings')$metric == metric)
-    reference <- slot(userSettings, 'settings')$value[idx]
-    if (metric != 'pace'){
-      targetZDec <- targetZ
-    } else {
-      targetZDec <- rep(NA, length(targetZ))
-      for (i in 1:length(minTargetZ)){
-        targetZDec[i] <- strToMinDec(targetZ[i])
-      }
-    }
-    TSS_IF <- getTSS(minTargetZ, targetZDec, reference, metric)
-    sessionDetails <- data.frame(minutes = minTargetZ,
-                                 target = targetZDec,
-                                 TSS = TSS_IF$TSS,
-                                 IF = TSS_IF$IF)
-    TSS <- sum(TSS_IF$TSS)
-    if(is.na(TSS) || TSS < 0){
-      stop(paste0(
-        "Something went wrong when calculationg TSS. ",
-        "Check your targetZ/minTargetZ inputs: if give they should not be NA or negative. ",
-        "Alternatively, provide a manual TSS. "
-        ))
-    }
-    manualTSS <- FALSE
-    slot(newSession, 'sessionDetails') <- sessionDetails
-    slot(newSession, 'metric') <- metric
-  } else {
-    warning("Using user defined TSS for this session.\n")
-    targetZDec <- targetZ
-    manualTSS <- TRUE
-  }
-  
-  
-  if (is.null(description)){
-    description <- sport
-  }
-  
-  slot(newSession, 'TSS') <- TSS
+  slot(newSession, 'sessions') <- sessions
   slot(newSession, 'description') <- description
-  slot(newSession, 'sport') <- sport
-  slot(newSession, 'manualTSS') <- manualTSS
   
   return(newSession)
 }
+
+
