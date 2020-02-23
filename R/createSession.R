@@ -21,9 +21,22 @@
 #' metric = list('pace', 'power'), userSettings = myThreshold, TSS = list(NA, NA),
 #' description = 'making a test session')
 #' @export
-createSession <- function(sports, metrics = list(NA), minTargetZs = list(NA), targetZs = list(NA),
-                               userSettings = NA, TSS = list(NA), description = ''){
+createSession <- function(sports, metrics = list(NA),
+                          minTargetZs = list(NA),
+                          targetZs = list(NA),
+                          TSS = list(NA),
+                          userSettings = NULL,
+                          description = ''){
   
+  if(!missing(userSettings) && class(userSettings) != 'userSettings'){
+    stop('User settings must be of class "userSettings')
+  }
+  if(length(description) !=1 ){
+    stop('description must be of length 1')
+  }
+  if (!is.list(sports) || length(sports) < 1){
+    stop('Sports must be a list of length > 0')
+  }
   
   sessions <- lapply(seq_along(sports), function(d){
     
@@ -34,8 +47,12 @@ createSession <- function(sports, metrics = list(NA), minTargetZs = list(NA), ta
     thisTargetZ <- targetZs[[d]]
     thisMinTargetZ <- minTargetZs[[d]]
     
-    #the target Z in number format
-    targetZDec <- validateTimes(thisMetric, thisTargetZ)
+    validateSessionArgs(TSS = thisTSS,
+                        sport = thisSport,
+                        metric = thisMetric,
+                        targetZ = thisTartetZ,
+                        targetTime = thisMinTargetZ)
+    
     
     if(class(userSettings) == 'userSettings'){
       reference <- slot(userSettings, 'settings') %>% 
@@ -45,18 +62,18 @@ createSession <- function(sports, metrics = list(NA), minTargetZs = list(NA), ta
       reference <- data.frame()
     }
     
-    
     # TSS not given: calculate it
-    if(is.na(thisTSS)){
+    if(any(is.na(thisTSS))){
       #need to find the threshold for the combination of sport/metric
-      
-      
       if (nrow(reference) != 1){
         stop(paste0('Threshold not found for the combination ',
                     thisSport, '/', thisMetric))
       }
       
-      thisTSS <- getTSS(thisMinTargetZ, targetZDec, reference$value, thisMetric)
+      thisMinTargetZ <- strToMinDec(thisMinTargetZ)
+      thisTargetZ <- strToMinDec(thisTargetZ)
+      thisTSS <- getTSS(thisMinTargetZ, thisTargetZ,
+                        reference$value, thisMetric)
       manualTSS <- FALSE
     
     } else {
@@ -79,12 +96,11 @@ createSession <- function(sports, metrics = list(NA), minTargetZs = list(NA), ta
       
     }
     
- 
     # get the table session details
     sessionDetails <- getSessionDetails(sport = thisSport,
                                         metric = thisMetric,
                                         minutes = thisMinTargetZ,
-                                        target = targetZDec,
+                                        target = thisTargetZ,
                                         threshold = reference$value,
                                         TSS = thisTSS,
                                         manualTSS = manualTSS)

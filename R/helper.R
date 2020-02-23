@@ -50,35 +50,30 @@ cleanSettings <- function(oldData, sport, metric){
 }
 
 #' @title strToMinDec
-#' @description Convert a string to decimal
-#' @param inputStr (str) a string in the format mm:ss
+#' @description Convert input to decimal. The input is
+#' either already numeric or a string. If a string, the
+#' format is either nn.nn or mm:ss
+#' @param inputStr a vector of string or numeric
 #' @export
 strToMinDec <- function(inputStr) {
   
-  res <- NULL
-  for (i in 1:length(inputStr)){
-    
-    if(is.na(inputStr[i])){
-      minDec <- NA
-    } else {
-      validateInputStr(inputStr[i], 'inputStr')
-      
-      min <- as.numeric(str_split(inputStr[i], ':')[[1]][1])
-      sec <- str_split(inputStr[i], ':')[[1]][2]
-      if (nchar(sec) != 2){
-        stop('sec must be in the format ss, i.e. 02, rather than 2')
-      }
-      sec <- as.numeric(sec)
-      
-      minDec <- min+(sec/60)
+  res <- str_split(inputStr, ':')
+  
+  res <- lapply(res, function(d){
+    d <- as.numeric(d)
+    if(length(d)>1){
+      d <- d[1]+d[2]/60
     }
-    
-    res <- c(res, minDec)
-  }
+    if(is.na(d) || d <= 0){
+      stop(paste0('Invalid value. Must be either numeric or a ',
+                  'string in the format "mm:ss". Must also be > 0'))
+    }
+    return(d)
+  })
   
-  
-  return(res)
+  return(unlist(res))
 }
+
 
 #' @title getTSS
 #' @description Function to calcualte TSS based on effort parameters and user threshold

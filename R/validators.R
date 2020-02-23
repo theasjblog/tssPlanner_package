@@ -108,22 +108,12 @@ validateAddSessionPlan <- function(weeklyPlan, session, day, sessionNumber){
 
 }
 
-validateSessionArgs <- function(weeklyPlan, day, sessionNumber){
-  if(!is.null(weeklyPlan) && class(weeklyPlan) != 'weeklyPlan'){
-      stop('weeklyPlan must be of class weeklyPlan')
-    }
-
-  if (!day %in% slotNames(weeklyPlan) || day == 'userSettings'){
-    stop("'day' must be one of monday, tuesday, wednesday, thursday, friday, saturday or sunday.")
-  }
+validateSessionArgs <- function(TSS,
+                                sport,
+                                metric,
+                                targetZ,
+                                targetTime){
   
-  if (is.na(sessionNumber) || length(sessionNumber) != 1 || !is.numeric(sessionNumber)){
-    stop("'sessionNumber' must be a numeric vector of length 1")
-  }
-  if(sessionNumber <= 0 || sessionNumber > length(slot(slot(weeklyPlan, day), 'sessions'))){
-    stop(paste0("'sessionNumber' must be <= ",
-                length(slot(slot(weeklyPlan, day), 'sessions'))))
-  }
 }
 
 validateManulaTSS <- function(TSS, type, description){
@@ -211,27 +201,6 @@ validateUserSettings <- function(sport, type, value, userSettings = NULL){
   if(!type%in%c('power', 'pace', 'HR')){
     errMessage <- c(errMessage,
                     "'type' must be one of 'power', 'pace', 'HR'")
-  }
-  if(type  == 'pace' && !is.character(value)){
-    errMessage <- c(errMessage,
-                    "'value' must be character if 'type' is 'pace'")
-  }
-  if(type  %in% c('power', 'HR') && !is.numeric(value)){
-    errMessage <- c(errMessage,
-                    "'value' must be numeric if 'type' is 'power' or 'HR'")
-  }
-  if(is.numeric(value) && value <= 0){
-    errMessage <- c(errMessage,
-                    "'value' must be > 0")
-  }
-  
-  if(is.character(value)){
-    tmpMsg <- tryCatch(validateInputStr(value, 'value'),
-                       error = function(e) e$message)
-    if(!is.null(tmpMsg)){
-      errMessage <- c(errMessage,
-                      tmpMsg)
-    }
   }
   
   

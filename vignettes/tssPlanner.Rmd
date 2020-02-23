@@ -219,7 +219,7 @@ cat(summary(newPlan))
 
 ```{r swap3}
 #create a new session
-manualSwimSession <- createSession(sport = 'swim', TSS = 80, description = 'making a run test session')
+manualSwimSession <- createSession(sport = list('swim'), TSS = list(80), description = 'making a run test session')
 
 # add it to wednesday
 newPlan <- addSessionToPlan(newPlan, session = manualSwimSession,
@@ -240,11 +240,11 @@ In this example we will change the FTP from 250 to 280
 
 ```{r changeSettings, warning=FALSE}
 #create a new session
-manualBikeSession <- createSession(sport = 'bike', TSS = 80, description = 'making a bike manual session')
+manualBikeSession <- createSession(sport = list('bike'), TSS = list(80), description = 'making a bike manual session')
 
 # add it to friday
-newPlan <- addSessionToPlan(newPlan, session = manualBikeSession,
-                            day = 'friday')
+newPlan <- addSessionToPlan(newPlan, 
+                            session = manualBikeSession, day = 'friday')
 
 #input a new ftp
 newSettings <- addThreshold(sport = 'bike', metric = 'power', value = 280, userSettings = slot(newPlan, 'userSettings'))
