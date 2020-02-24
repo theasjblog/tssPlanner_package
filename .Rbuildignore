@@ -2,3 +2,6 @@
 ^renv\.lock$
 ^.*\.Rproj$
 ^\.Rproj\.user$
+^tssPlanner\.Rcheck$
+^tssPlanner.*\.tar\.gz$
+^tssPlanner.*\.tgz$
