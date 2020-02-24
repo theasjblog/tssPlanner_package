@@ -1,3 +1,43 @@
+#' @title validateTimes
+#' @description return the values in decima format
+#' @param metric session metric
+#' @param values the valus to convert
+validateTimes <- function(metric, values){
+  if (is.na(metric) || metric != 'pace'){
+    valuesDec <- values
+  } else {
+    valuesDec <- strToMinDec(values)
+  }
+  
+  return(valuesDec)
+}
+
+
+#' @title getSessionDetails
+#' @description get the dataframe summarizing a session
+#' @param sport session sport
+#' @param metric session metric
+#' @param minutes minutes in target zone
+#' @param target target zone
+#' @param threshold threshold for the sport/metric
+#' @param TSS session TSS
+#' @param manualTSS if the TSS was user defined or not
+getSessionDetails <- function(sport, metric, minutes, target, threshold, TSS, manualTSS){
+  
+  df <- data.frame(sport = sport,
+                   metric = metric,
+                   minutes = minutes,
+                   target = round(target, digits = 2),
+                   threshold = round(threshold, digits = 2),
+                   TSS = round(TSS, digits = 2),
+                   user_TSS = manualTSS)
+  
+  df$sport <- as.character(df$sport)
+  df$metric <- as.character(df$metric)
+  
+  return(df)
+}
+
 #' @title cleanSettings
 #' @description remove rows of already used sport/metric combination from userSettings data.frame
 #' @param oldData data.frame of data to clean. From the slot settings in userSettings
@@ -10,23 +50,30 @@ cleanSettings <- function(oldData, sport, metric){
 }
 
 #' @title strToMinDec
-#' @description Convert a string to decimal
-#' @param inputStr (str) a string in the format mm:ss
+#' @description Convert input to decimal. The input is
+#' either already numeric or a string. If a string, the
+#' format is either nn.nn or mm:ss
+#' @param inputStr a vector of string or numeric
 #' @export
 strToMinDec <- function(inputStr) {
-  validateInputStr(inputStr, 'inputStr')
-
-  min <- as.numeric(str_split(inputStr, ':')[[1]][1])
-  sec <- str_split(inputStr, ':')[[1]][2]
-  if (nchar(sec) != 2){
-    stop('sec must be in the format ss, i.e. 02, rather than 2')
-  }
-  sec <- as.numeric(sec)
-
-  minDec <- min+(sec/60)
-
-  return(minDec)
+  
+  res <- str_split(inputStr, ':')
+  
+  res <- lapply(res, function(d){
+    d <- as.numeric(d)
+    if(length(d)>1){
+      d <- d[1]+d[2]/60
+    }
+    if(is.na(d) || d <= 0){
+      stop(paste0('Invalid value. Must be either numeric or a ',
+                  'string in the format "mm:ss". Must also be > 0'))
+    }
+    return(d)
+  })
+  
+  return(unlist(res))
 }
+
 
 #' @title getTSS
 #' @description Function to calcualte TSS based on effort parameters and user threshold
@@ -35,20 +82,19 @@ strToMinDec <- function(inputStr) {
 #' @param reference effort threshold
 #' @param metric the kind of threshold, i.e. power, HR or pace
 getTSS <- function(minTargetZ, targetZ, reference, metric){
-
+  
   IF <- switch(metric,
                'power' = targetZ/reference,
                'HR' = targetZ/reference,
                'pace' = reference/targetZ,
                stop('Unkown type'))
-
-
-
+  
+  
+  
   hhtargetZ <- minTargetZ / 60
   TSS <- (IF^2) * hhtargetZ * 100
-
-  return(list(TSS = TSS,
-              IF = IF))
+  
+  return(TSS)
 }
 
 
@@ -57,13 +103,10 @@ getTSS <- function(minTargetZ, targetZ, reference, metric){
 #' @param session An object of calss session
 #' @export
 viewSessionDetails <- function(session){
-  if (class(session) != 'session'){
-    stop("'session' is not of class 'session'")
+  if (class(session) != 'singleSportSession'){
+    stop("'session' is not of class 'singleSportSession'")
   }
-  if (slot(session, 'manualTSS')){
-    warning('Cannot return details for a session wher the user defined the TSS.\n')
-    return()
-  }
+  
   return(slot(session, 'sessionDetails'))
 }
 
@@ -73,8 +116,8 @@ viewSessionDetails <- function(session){
 #'
 #' @description Create a new weekly training plan with no sessions
 #'
-#' @usage
-#' #newPlan <- createPlan()
+#' @examples
+#' newPlan <- createPlan()
 #'
 #' @export
 createPlan <- function(){
@@ -91,13 +134,13 @@ createPlan <- function(){
 #' @param session (session) The new training session
 #' @param day (character) The day of the week where to add the training session
 #'
-#' @usage
+#' @examples 
 #' #add a run threshold to settings
 #' mySettings <- addThreshold(sport = 'run', metric = 'pace', value = '4:30')
 #' 
 #' # create run session
-#' runSession <- createSession(sport = 'run', metric = 'pace', minTargetZ = c(40, 20),
-#' targetZ = c('4:50', '4:30'),
+#' runSession <- createSession(sport = list('run'), metric = list('pace'),
+#' minTargetZ = list(c(40, 20)), targetZ = list(c('4:50', '4:30')), TSS = list(NA),
 #' userSettings =  mySettings,
 #' description = 'making a run test session')
 #' 
@@ -110,9 +153,9 @@ createPlan <- function(){
 #'
 #' @export
 addSessionToPlan <- function(weeklyPlan, session, day){
-
+  
   validateAddSessionPlan(weeklyPlan, session, day)
-
+  
   daySlot <- slot(weeklyPlan, day)
   daySessions <- slot(daySlot, 'sessions')
   
@@ -120,36 +163,41 @@ addSessionToPlan <- function(weeklyPlan, session, day){
   names(daySessions) <- seq(1:length(daySessions))
   slot(daySlot, 'sessions') <- daySessions
   slot(weeklyPlan, day) <- daySlot
-
+  
   return (weeklyPlan)
-
+  
 }
 
 
-#' Delete a session from a plan
-#'
+#' @title Delete a session from a plan
 #' @description Delete a training session from weekly plan
-#'
 #' @inheritParams addSessionToPlan
-#'
-#' @usage
-#' ##set the swim threshold to 1:30
-#' #mySwimTh <- setSwimThreshold('1:30')
-#'
-#' ##create a swim session
-#' #newSession <- createSession(c(20, 30), c('1:20', '1:40'), mySwimTh, 'making a test session')
-#'
-#' ##create the plan
-#' #newPlan <- addSessionToPlan(weeklyPlan = NULL, session = newSession, day = 'monday', sessionNumber = 2)
-#'
+#' @param sessionNumber (numeric) the session id to delete
+#' @examples
+#' ##set the run threshold to 4:30
+#' myThreshold <- addThreshold(sport = 'run', metric = 'pace', value = '4:30')
+#' ##set the bike threshold to 250
+#' myThreshold <- addThreshold(sport = 'bike', metric = 'power', value = 250, userSettings = myThreshold)
+#' ##create a brick session
+#' newSession <- createSession(sports=list('run', 'bike'),
+#'                            minTargetZ = list(c(20, 30), 60), targetZ = list(c('4:20', '4:40'), 250),
+#'                            metric = list('pace', 'power'), userSettings = myThreshold, TSS = list(NA, NA),
+#'                            description = 'making a test session')
+#' # create a new plan
+#' newPlan <- storeSettings(myThreshold)
+#' ##add to the plan monday
+#' newPlan <- addSessionToPlan(weeklyPlan = newPlan, session = newSession, day = 'monday')
+#' ##add to the plan sunday
+#' newPlan <- addSessionToPlan(weeklyPlan = newPlan, session = newSession, day = 'sunday')
+#' cat(summary(newPlan))
 #' ##delete the session
-#' #newPlan <- deleteSession(newPlan, 'monday', 2)
-#'
+#' newPlan <- deleteSession(weeklyPlan = newPlan, day = 'monday', sessionNumber = 1)
+#' cat(summary(newPlan))
 #' @export
 deleteSession <- function(weeklyPlan, day, sessionNumber){
-
+  
   validateSessionArgs(weeklyPlan, day, sessionNumber)
-
+  
   daySlot <- slot(weeklyPlan, day)
   daySessions <- slot(daySlot, 'sessions')
   daySessions[[sessionNumber]] <- NULL
@@ -158,20 +206,9 @@ deleteSession <- function(weeklyPlan, day, sessionNumber){
   }
   slot(daySlot, 'sessions') <- daySessions
   slot(weeklyPlan, day) <- daySlot
-
+  
   return(weeklyPlan)
-
-}
-
-getSessionName <- function(sessionNumber){
-  if(sessionNumber == 1){
-    sessionName <- 'session1'
-  }
-  if(sessionNumber == 2){
-    sessionName <- 'session2'
-  }
-
-  return (sessionName)
+  
 }
 
 
@@ -179,25 +216,37 @@ getSessionName <- function(sessionNumber){
 #'
 #' @description Add a training session to a new or existing weekly plan
 #'
-#' @param weekPlan (weekPlan) An object with the weekly training plan. If NULL, a new one will be created
+#' @param weeklyPlan (weekPlan) An object with the weekly training plan. If NULL, a new one will be created
 #' @param fromDay (character) The day of the week where the training session  was scheduled
 #' @param fromSessionNumber (numeric) The session number for fromDay, 1 or 2
 #' @param toDay (character) The day of the week where to move the training session
 #' @param toSessionNumber (numeric) The session number for that toDay, 1 or 2
 #' @param swap (logic) If TRUE, replace the TO session with the FROM and the FROM with an epty session, if FALSE swaps sessions.
-#'
-#' @usage
-#' ##set the swim threshold to 1:30
-#' #mySwimTh <- setSwimThreshold('1:30')
-#'
-#' ##create a swim session
-#' #newSession <- createSession(c(20, 30), c('1:20', '1:40'), mySwimTh, 'making a test session')
-#'
-#' ##create the plan
-#' #newPlan <- addSessionToPlan(weeklyPlan = NULL, session = newSession, day = 'monday', sessionNumber = 2)
-#'
-#' ##move the session
-#' #newPlan <- moveSession(weeklyPlan, 'monday', 2, 'tuesday', 1)
+#' @examples
+#' ##set the run threshold to 4:30
+#' myThreshold <- addThreshold(sport = 'run', metric = 'pace', value = '4:30')
+#' ##set the bike threshold to 250
+#' myThreshold <- addThreshold(sport = 'bike', metric = 'power', value = 250, userSettings = myThreshold)
+#' ##create a brick session
+#' newSession <- createSession(sports=list('run', 'bike'),
+#'                            minTargetZ = list(c(20, 30), 60), targetZ = list(c('4:20', '4:40'), 250),
+#'                            metric = list('pace', 'power'), userSettings = myThreshold, TSS = list(NA, NA),
+#'                            description = 'making a test session')
+#' # create a new plan
+#' newPlan <- storeSettings(myThreshold)
+#' ##add to the plan monday
+#' newPlan <- addSessionToPlan(weeklyPlan = newPlan, session = newSession, day = 'monday')
+#' newSession <- createSession(sports=list('swim'),
+#'                            minTargetZ = list(NA), targetZ = list(NA),
+#'                            metric = list(NA), userSettings = myThreshold, TSS = list(80),
+#'                            description = 'making a swim session')
+##' newPlan <- addSessionToPlan(weeklyPlan = newPlan, session = newSession, day = 'sunday')
+#' # swap sessions
+#' newPlan <- moveSession(weeklyPlan = newPlan, fromDay = 'monday', fromSessionNumber = 1,
+#' toDay = 'sunday', toSessionNumber = 1, swap = TRUE)
+#' # move a single session
+#' newPlan <- moveSession(weeklyPlan = newPlan, fromDay = 'monday', fromSessionNumber = 1,
+#' toDay = 'tuesday', swap = FALSE)
 #' @export
 moveSession <- function(weeklyPlan, fromDay, fromSessionNumber,
                         toDay, toSessionNumber = NA,
@@ -213,7 +262,7 @@ moveSession <- function(weeklyPlan, fromDay, fromSessionNumber,
   originalFromSessions <- slot(slot(weeklyPlan, fromDay), 'sessions')
   originalToSessions <- slot(slot(weeklyPlan, toDay), 'sessions')
   fromSession <- originalFromSessions[[fromSessionNumber]]
-
+  
   
   if (is.numeric(toSessionNumber) && !swap){
     if(toSessionNumber > length(originalToSessions)){
@@ -243,9 +292,9 @@ moveSession <- function(weeklyPlan, fromDay, fromSessionNumber,
   }
   slot(slot(weeklyPlan, fromDay), 'sessions') <- originalFromSessions
   slot(slot(weeklyPlan, toDay), 'sessions') <- originalToSessions
-
+  
   return(weeklyPlan)
-
+  
 }
 
 
@@ -254,67 +303,43 @@ moveSession <- function(weeklyPlan, fromDay, fromSessionNumber,
 #'
 #' @description Get total weekly TSS
 #' @inheritParams addSessionToPlan
-#'
-#' @usage
-#' ##set the swim threshold to 1:30
-#' #mySwimTh <- setSwimThreshold('1:30')
-#'
-#' ##create a swim session
-#' #newSession <- createSession(c(20, 30), c('1:20', '1:40'), mySwimTh, 'making a test session')
-#'
-#' ##create the plan
-#' #newPlan <- addSessionToPlan(weeklyPlan = NULL, session = newSession, day = 'monday', sessionNumber = 2)
-#'
+#' @examples
+#' ##set the run threshold to 4:30
+#' myThreshold <- addThreshold(sport = 'run', metric = 'pace', value = '4:30')
+#' ##set the bike threshold to 250
+#' myThreshold <- addThreshold(sport = 'bike', metric = 'power', value = 250, userSettings = myThreshold)
+#' ##create a brick session
+#' newSession <- createSession(sports=list('run', 'bike'),
+#'                            minTargetZ = list(c(20, 30), 60), targetZ = list(c('4:20', '4:40'), 250),
+#'                            metric = list('pace', 'power'), userSettings = myThreshold, TSS = list(NA, NA),
+#'                            description = 'making a test session')
+#' # create a new plan
+#' newPlan <- storeSettings(myThreshold)
+#' ##add to the plan monday
+#' newPlan <- addSessionToPlan(weeklyPlan = newPlan, session = newSession, day = 'monday')
 #' ##get the totalTSS
-#' #getWeekTSS(weeklyPlan)
+#' getWeekTSS(newPlan)
 #' @export
 getWeekTSS <- function(weeklyPlan){
   if (class(weeklyPlan) != 'weeklyPlan'){
     stop('WeeklyPlan must be an S4 object of class weeklyPlan')
   }
-
+  
   TSS <- 0
   for (i in slotNames(weeklyPlan)){
     if (class(slot(weeklyPlan, i)) == 'dayWeek'){
       TSS <- TSS + getDayTSS(slot(weeklyPlan, i))
     }
   }
-
+  
   return(TSS)
 }
 
-#' Get single session TSS
-#'
-#' @description Get single session TSS
-#' @param session (session) A session object
-#'
-#' @usage
-#' ##set the bike HR threshold to 170
-#' myTh <- addThreshold(sport = 'bike', metric = 'HR', value = 170)
-#'
-#' ##create a bike session
-#' newSession <- createSession(sport = 'bike', metric = 'HR', minTargetZc(20, 30),
-#' targetZ = c(120, 150), userSettings = myTh, description = 'making a test session')
-#'
-#' ##get the session TSS
-#' getSessionTSS(weeklyPlan)
-#' @export
-getSessionTSS <- function(session){
-  if (class(session) != 'session'){
-    stop('session must be an S4 object of class session')
-  }
 
-  TSS <- session@TSS
-
-  return(TSS)
-}
-
-#' Get day TSS
-#'
+#' @title Get day TSS
 #' @description Get day TSS
 #' @param day (dayWeek) A dayWeek object
-#'
-#' @usage
+#' @examples
 #' #add a run threshold to settings
 #' mySettings <- addThreshold(sport = 'run', metric = 'pace', value = '4:30')
 #' 
@@ -331,37 +356,64 @@ getSessionTSS <- function(session){
 #' newPlan <- addSessionToPlan(weeklyPlan = newPlan, session = runSession,
 #' day = 'thursday')
 #' 
-#' getDayTSS(slot(newPlan, 'thursday'))
-#' 
+#' getDayTSS(day = slot(newPlan, 'thursday'))
 #' @export
 getDayTSS <- function(day){
   if (class(day) != 'dayWeek'){
     stop('day must be an S4 object of class dayWeek')
   }
-
+  
   sessions <- slot(day, 'sessions')
   
-  TSS <- sum(unlist(lapply(sessions, function(d){slot(d, 'TSS')})))
-
+  TSS <- sum(unlist(
+    lapply(sessions, function(d){
+      individualSession <- slot(d, 'sessions')
+      getFullSessionTSS(individualSession)})
+  ))
+  
+  
   return(TSS)
-
+  
 }
 
 
+getFullSessionTSS <- function(sessions){
+  TSS <- sum(unlist(
+    lapply(sessions,function(x){
+      slot(x, 'TSS')})
+  ))
+  
+  return(TSS)
+}
 
-
+getAllSports <- function(sessions){
+  allSports <- unique(unlist(
+    lapply(sessions,function(x){
+      slot(x, 'sport')})
+  ))
+  
+  if(length(allSports) != 1){
+    allSports <- 'brick'
+  }
+  
+  return(allSports)
+}
 
 #' Convert a decimal to mm:ss string
 #' @description Convert a positive integer to a string of mm:ss
 #' @param thDec (numeric) a positve numeric
 #' @export
 convertToMinSec <- function(thDec){
-  checkThDec(thDec)
-
-  min <- thDec %/% 1
-  sec <- round(60*(thDec - min), digits = 0)
-  asString <- paste0(min,':', sec)
-
+  #checkThDec(thDec)
+  if (!is.na(thDec)){
+    min <- thDec %/% 1
+    sec <- round(60*(thDec - min), digits = 0)
+    asString <- paste0(min,':', sec)
+  } else {
+    asString <- NA_character_
+  }
+  
+  
   return(asString)
 }
 
@@ -380,28 +432,64 @@ storeSettings <- function(userSettings, weeklyPlan = NULL){
     for (i in slotNames(weeklyPlan)){
       day <- slot(weeklyPlan, i)
       if (class(day) == 'dayWeek'){
-          sessions <- slot(day, 'sessions')
-          sessions <- lapply(sessions, function(d){
-            if (!slot(d, 'manualTSS')){
-              targetZ <- slot(d, 'sessionDetails')$target
-              if(slot(d, 'metric')=='pace'){
-                newTarget <- NULL
-                for (iii in 1:length(targetZ)){
-                  newTarget <- c(newTarget, convertToMinSec(targetZ[iii]))
-                }
-                targetZ <- newTarget
+        sessions <- slot(day, 'sessions')
+        newSession <- lapply(sessions, function(d){
+          dfSummary <- summary(d)
+          dfSummary <- split(dfSummary, dfSummary$sport)
+          
+          args <- lapply(dfSummary, function(x){
+            x$TSS[!x$user_TSS] <- NA
+            for (ii in 1:nrow(x)){
+              targets <- NULL
+              if (!is.na(x$metric[ii]) && x$metric[ii] == 'pace'){
+                targets <- c(targets, convertTargezToMinSec(x$target[ii]))
+              } else {
+                targets <- c(targets, x$target[ii])
               }
-              createSession(sport = slot(d, 'sport'),
-                            metric = slot(d, 'metric'),
-                            minTargetZ = slot(d, 'sessionDetails')$minutes,
-                            targetZ = targetZ,
-                            userSettings = userSettings,
-                            description = slot(d, 'description'))
-            } else {
-              d
             }
-            })
-          slot(day, 'sessions') <- sessions
+            
+            return(
+              list(
+                sport = unique(x$sport),
+                metric = unique(x$metric),
+                minutes = x$minutes,
+                target = targets,
+                TSS = x$TSS
+              )
+            )
+          })
+          
+          sport <- lapply(args, function(x){
+            as.character(x$sport)
+          })
+          
+          metric <- lapply(args, function(x){
+            as.character(x$metric)
+          })
+          
+          minutes <- lapply(args, function(x){
+            x$minutes
+          })
+          
+          target <- lapply(args, function(x){
+            x$target
+          })
+          
+          TSS <- lapply(args, function(x){
+            x$TSS
+          })
+          
+          createSession(sport = sport,
+                        metric = metric,
+                        minTargetZ = minutes,
+                        targetZ = target,
+                        TSS = TSS, 
+                        userSettings = userSettings,
+                        description = slot(d, 'description'))
+          
+        })
+        
+        slot(day, 'sessions') <- newSession
         
         slot(weeklyPlan, i) <- day  
       }
@@ -413,24 +501,7 @@ storeSettings <- function(userSettings, weeklyPlan = NULL){
   
   slot(weeklyPlan, 'userSettings') <- userSettings
   return (weeklyPlan)
-
-}
-
-getValues <- function(userSettings, session){
-
-  targetZ <- session@targetZ
-  if (session@type == 'bike'){
-    reference <- userSettings@FTP
-  } else if (session@type == 'swim'){
-    reference <- userSettings@swimThreshold
-    targetZ <- convertTargezToMinSec(targetZ)
-  } else if (session@type == 'run'){
-    reference <- userSettings@runThreshold
-    targetZ <- convertTargezToMinSec(targetZ)
-  }
-
-  return(list(reference = reference,
-              targetZ = targetZ))
+  
 }
 
 convertTargezToMinSec <- function(targetZ){
@@ -438,7 +509,7 @@ convertTargezToMinSec <- function(targetZ){
   for (i in 1: length(targetZ)){
     newTargetZ <- c(newTargetZ, convertToMinSec(targetZ[i]))
   }
-
+  
   return(newTargetZ)
 }
 
@@ -465,7 +536,7 @@ tableOfTss <- function(weeklyPlan){
   if (class(weeklyPlan) != 'weeklyPlan'){
     stop('weeklyPlan must be an object of class weeklyPlan')
   }
-
+  
   tableRows <- getMaxNumberSession(weeklyPlan)
   
   if (tableRows == 0){
@@ -486,7 +557,15 @@ tableOfTss <- function(weeklyPlan){
       if (class(day) == 'dayWeek'){
         sessions <- slot(day, 'sessions')
         if (length(sessions) > 0){
-          WeekTSS[seq(1:length(sessions)), i] <- unlist(lapply(sessions, function(d){round(d@TSS,digits = 0)}))
+          WeekTSS[seq(1:length(sessions)), i] <- unlist(lapply(sessions, function(d){
+            round(sum(unlist(
+              lapply(slot(d, 'sessions'), function(x){
+                slot(x, 'TSS')
+              })
+            )), digits = 2)
+            
+            
+          }))
         }
       }
     }
@@ -501,7 +580,7 @@ tableOfTss <- function(weeklyPlan){
     rownames(WeekTSS) <- c(seq(1:tableRows), 'Day Tot')
   }
   
-
+  
   return(WeekTSS)
 }
 
@@ -509,44 +588,47 @@ tableOfTss <- function(weeklyPlan){
 #' plot TSS distribution per day of the week
 #' @description plot TSS distribution per day of the week
 #' @param x (weeklyPlan) An object of class dayWeek
+#' @param y other paramenters
 #' @export
 setMethod('plot', signature = c(x = 'weeklyPlan', y = 'missing'), function(x, y){
-
-
+  
+  
   df <- getDataForPlot(x)
-
+  
   g <- ggplot(df, aes(Day, TSS)) +
     geom_col(aes(fill = Sport)) +
     scale_x_discrete(limits = c('monday', 'tuesday', 'wednesday',
                                 'thursday', 'friday', 'saturday', 'sunday')) +
     ggtitle(paste0('Total weekly TSS: ', round(getWeekTSS(x), digits = 0)))
-
+  
   return(g)
-
+  
 })
 
 
 getDataForPlot <- function(weeklyPlan){
-
+  
   tablesRows <- getMaxNumberSession(weeklyPlan)
-
+  
   Day <- NULL
   Sport <- NULL
   TSS <- NULL
   for (i in slotNames(weeklyPlan)){
     day <- slot(weeklyPlan, i)
     if (class(day) == 'dayWeek'){
-        session <- slot(day, 'sessions')
-        Sport <- c(Sport, sessionSport <- unlist(lapply(session, function(d){d@sport})))
-        TSS <- c(TSS, unlist(lapply(session, function(d){d@TSS})))
-        Day <- c(Day, rep(i, length(session)))
+      session <- slot(day, 'sessions')
+      sessionSport <- unlist(lapply(session, function(d){getAllSports(slot(d, 'sessions'))}))
+      sessionTSS <- unlist(lapply(session, function(d){getFullSessionTSS(slot(d, 'sessions'))}))
+      Sport <- c(Sport, sessionSport)
+      TSS <- c(TSS, sessionTSS)
+      Day <- c(Day, rep(i, length(session)))
     }
   }
-
+  
   df <- data.frame(Day = Day,
                    Sport = Sport,
                    TSS = TSS)
-
+  
   return(df)
 }
 

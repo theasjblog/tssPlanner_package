@@ -4,21 +4,7 @@
 \alias{addSessionToPlan}
 \title{Add a session to a plan}
 \usage{
-#add a run threshold to settings
-mySettings <- addThreshold(sport = 'run', metric = 'pace', value = '4:30')
-
-# create run session
-runSession <- createSession(sport = 'run', metric = 'pace', minTargetZ = c(40, 20),
-targetZ = c('4:50', '4:30'),
-userSettings =  mySettings,
-description = 'making a run test session')
-
-# create a new plan
-newPlan <- storeSettings(mySettings)
-
-# add session to the plan
-newPlan <- addSessionToPlan(weeklyPlan = newPlan, session = runSession,
-day = 'thursday')
+addSessionToPlan(weeklyPlan, session, day)
 }
 \arguments{
 \item{weeklyPlan}{(weekPlan) An object with the weekly training plan. If NULL, a new one will be created}
@@ -29,4 +15,22 @@ day = 'thursday')
 }
 \description{
 Add a training session to a new or existing weekly plan
+}
+\examples{
+#add a run threshold to settings
+mySettings <- addThreshold(sport = 'run', metric = 'pace', value = '4:30')
+
+# create run session
+runSession <- createSession(sport = list('run'), metric = list('pace'),
+minTargetZ = list(c(40, 20)), targetZ = list(c('4:50', '4:30')), TSS = list(NA),
+userSettings =  mySettings,
+description = 'making a run test session')
+
+# create a new plan
+newPlan <- storeSettings(mySettings)
+
+# add session to the plan
+newPlan <- addSessionToPlan(weeklyPlan = newPlan, session = runSession,
+day = 'thursday')
+
 }

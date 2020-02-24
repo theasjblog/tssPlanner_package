@@ -8,6 +8,8 @@
 }
 \arguments{
 \item{x}{(weeklyPlan) An object of class dayWeek}
+
+\item{y}{other paramenters}
 }
 \description{
 plot TSS distribution per day of the week

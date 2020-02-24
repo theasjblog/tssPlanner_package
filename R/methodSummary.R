@@ -1,28 +1,36 @@
 #' define a summary method for session
 #' @description define a summary method for session
-#' @param object (session) An object of class session
+#' @param object (singleSportSession) An object of class session
 #' @export
-setMethod('summary', signature = 'session', function(object){
+setMethod('summary', signature = 'singleSportSession', function(object){
   text <- paste0('Session sport: ', slot(object, 'sport'),
                  '\nTSS: ', round(slot(object, 'TSS'),digits = 0),
-                 '\nUser defined TSS: ', as.character(slot(object, 'manualTSS')),
-                 '\nDescription: ', object@description)
+                 '\nUser defined TSS: ', as.character(slot(object, 'manualTSS')))
   
-  if(!slot(object, 'manualTSS')){
-    details <- viewSessionDetails(object)
-    
-    text <- paste0(
+  details <- viewSessionDetails(object)
+  text <- paste0(
       text,
-      '\nTotal duration in minutes: ', sum(details$minutes)
+      '\nTotal duration in minutes: ', sum(details$minutes),
+      '\n\n'
     )
-  } else {
-    details <- NULL
-  }
-  text <- paste0(text, '\n\n')
-  
   
   return(list(text = text,
               details = details))
+  
+})
+
+#' define a summary method for session
+#' @description define a summary method for session
+#' @param object (session) An object of class session
+#' @export
+setMethod('summary', signature = 'session', function(object){
+  
+  alldf <- lapply(slot(object, 'sessions'), function(d){
+    summary(d)$details
+  })
+  
+  alldf <- bind_rows(alldf)
+  return(alldf)
   
 })
 
@@ -36,20 +44,24 @@ setMethod('summary', signature = 'dayWeek', function(object){
   TSS <- getDayTSS(object)
   
   if (TSS == 0){
-    text <- 'No session scheduled for this day\n'
+    text <- 'No session scheduled for this day\n\n'
   } else {
-    text <- paste0('Total TSS for the day: ', round(TSS, digits = 0), '.\n\nIndividual sessions:\n')
-    sessions <- slot(object, 'sessions')
-    
-    for (i in seq_len(length(sessions))){
-      TSSindividual <- getSessionTSS(sessions[[i]])
-      text <- paste0(text, 'Session ', i, ':\n', summary(sessions[[i]])$text)
-      
+    text <- paste0('Total TSS for the day: ', round(TSS, digits = 0), '.\n\n')
+    for (i in 1:length(slot(object, 'sessions'))){
+      singleSession <- slot(slot(object, 'sessions')[[i]], 'sessions')
+      thisSessionTSS <- getFullSessionTSS(singleSession)
+      allSports <- getAllSports(singleSession)
+      text <- paste0(text,
+                     'Session ', i,
+                     '\nSport: ', allSports,
+                     ',\nTSS: ', thisSessionTSS, '\n',
+                     '\nDescription: ', slot(slot(object, 'sessions')[[i]], 'description'),
+                     '\n')
     }
   }
   text <- paste0(text,
                  paste(rep('*', 30), collapse = ''),
-                 '\n')
+                 '\n\n')
   
   return(text)
   

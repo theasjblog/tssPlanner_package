@@ -11,26 +11,34 @@ setClass('userSettings',
 #' @slot sport character of the sport
 #' @slot metric The metric used to calcualte TSS for this session
 #' @slot TSS numeric The session TSS
-#' @slot description A character description for the session
 #' @slot manualTSS logical TRUE if the TSS used was provided by the user
 #' @slot sessionDetails data.frame Details of each session interval
-setClass('session',
+setClass('singleSportSession',
          representation(sport= 'character',
                         metric = 'character',
                         sessionDetails = 'data.frame',
                         TSS = 'numeric',
-                        description = 'character',
                         manualTSS = 'logical'
                         ),
          prototype(sport = NULL,
                    metric = NULL,
                    sessionDetails = NULL,
                    TSS = NULL,
-                   description = NULL,
                    manualTSS = FALSE
                    )
 )
 
+#' The individual training session
+#' @slot sessions list of sessions in the brick session
+#' @slot description A character description for the session
+setClass('session',
+         representation(sessions = 'list',
+                        description = 'character'
+         ),
+         prototype(sessions = list(),
+                   description = NULL
+         )
+)
 
 #' class for the day of the week session
 #' @slot sessions list the list of session to do that day
@@ -60,3 +68,6 @@ setClass('weeklyPlan',
                    friday = new('dayWeek'),
                    saturday = new('dayWeek'),
                    sunday = new('dayWeek')))
+
+
+

@@ -2,32 +2,49 @@
 % Please edit documentation in R/createSession.R
 \name{createSession}
 \alias{createSession}
-\title{Create a new training session}
+\title{createSession}
 \usage{
-##set the swim threshold to 1:30
-#myThreshold <- addThreshold(sport = 'swim', type = 'pace', value = '1:30')
-
-##create a swim session
-#newSession <- createSession(minTargetZ = c(20, 30), targetZ = c('1:20', '1:40'),
-metric = 'pace', userSettings = myThreshold, type = 'swim',
-description = 'making a test session')
+createSession(
+  sports,
+  metrics = list(NA),
+  minTargetZs = list(NA),
+  targetZs = list(NA),
+  userSettings = NA,
+  TSS = list(NA),
+  description = ""
+)
 }
 \arguments{
-\item{sport}{(character) One of the sports: bike, run, swim}
+\item{sports}{(list) One of the sports: bike, run, swim}
 
-\item{metric}{(character) One of 'power', 'pace', 'HR'}
+\item{metrics}{(list) One of 'power', 'pace', 'HR'}
 
-\item{minTargetZ}{(numeric) Number of a minutes at a specified intensity}
+\item{minTargetZs}{(list) Number of a minutes at a specified intensity for each sport/session}
 
-\item{targetZ}{(numeric, character) The session intensity for the minutes specified. Numeric for type = bike, character otherwise}
+\item{targetZs}{(list) The session intensity for the minutes specified. Numeric for type = bike, character otherwise}
 
 \item{userSettings}{(userSettings) an object of class userSettings}
 
-\item{TSS}{(numeric) the known TSS for the session. If this is given (and is not NA (default))
-it will be used to determine the session TSS, even if intervals are given.}
+\item{TSS}{(list) the known TSS for the session. If this is given (and is not NA (default))
+it will be used to set the session TSS, even if intervals are given.}
 
 \item{description}{(character) Optional session description. If NULL, it will be set to the type}
 }
 \description{
 Function to set up a user swim threshold
+}
+\details{
+Create a new training session
+}
+\examples{
+##set the run threshold to 4:30
+myThreshold <- addThreshold(sport = 'run', metric = 'pace', value = '4:30')
+##set the bike threshold to 250
+myThreshold <- addThreshold(sport = 'bike', metric = 'power', value = 250, userSettings = myThreshold)
+
+##create a brick session
+newSession <- createSession(sports=list('run', 'bike'),
+minTargetZ = list(c(20, 30), 60), targetZ = list(c('1:20', '1:40'), 250),
+metric = list('pace', 'power'), userSettings = myThreshold, TSS = list(NA, NA),
+description = 'making a test session')
 }

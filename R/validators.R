@@ -108,22 +108,12 @@ validateAddSessionPlan <- function(weeklyPlan, session, day, sessionNumber){
 
 }
 
-validateSessionArgs <- function(weeklyPlan, day, sessionNumber){
-  if(!is.null(weeklyPlan) && class(weeklyPlan) != 'weeklyPlan'){
-      stop('weeklyPlan must be of class weeklyPlan')
-    }
-
-  if (!day %in% slotNames(weeklyPlan) || day == 'userSettings'){
-    stop("'day' must be one of monday, tuesday, wednesday, thursday, friday, saturday or sunday.")
-  }
+validateSessionArgs <- function(TSS,
+                                sport,
+                                metric,
+                                targetZ,
+                                targetTime){
   
-  if (is.na(sessionNumber) || length(sessionNumber) != 1 || !is.numeric(sessionNumber)){
-    stop("'sessionNumber' must be a numeric vector of length 1")
-  }
-  if(sessionNumber <= 0 || sessionNumber > length(slot(slot(weeklyPlan, day), 'sessions'))){
-    stop(paste0("'sessionNumber' must be <= ",
-                length(slot(slot(weeklyPlan, day), 'sessions'))))
-  }
 }
 
 validateManulaTSS <- function(TSS, type, description){
@@ -156,7 +146,7 @@ validateManulaTSS <- function(TSS, type, description){
 
 checkStoreSettings <- function(userSettings, weeklyPlan){
   if (is.null(userSettings)){
-    stop('userSettings canot be null')
+    stop('userSettings cannot be null')
   }
   if (class(userSettings) != 'userSettings'){
     stop('userSettings must be an object of class userSettings')
@@ -212,96 +202,7 @@ validateUserSettings <- function(sport, type, value, userSettings = NULL){
     errMessage <- c(errMessage,
                     "'type' must be one of 'power', 'pace', 'HR'")
   }
-  if(type  == 'pace' && !is.character(value)){
-    errMessage <- c(errMessage,
-                    "'value' must be character if 'type' is 'pace'")
-  }
-  if(type  %in% c('power', 'HR') && !is.numeric(value)){
-    errMessage <- c(errMessage,
-                    "'value' must be numeric if 'type' is 'power' or 'HR'")
-  }
-  if(is.numeric(value) && value <= 0){
-    errMessage <- c(errMessage,
-                    "'value' must be > 0")
-  }
   
-  if(is.character(value)){
-    tmpMsg <- tryCatch(validateInputStr(value, 'value'),
-                       error = function(e) e$message)
-    if(!is.null(tmpMsg)){
-      errMessage <- c(errMessage,
-                      tmpMsg)
-    }
-  }
-  
-  
-  errMessage <- paste0(errMessage, collapse = '. ')
-  return(errMessage)
-}
-
-# function to validate the arguemnts to create a new training session
-validateCreateSession <- function(sport, metric, minTargetZ, targetZ,
-                                  userSettings, TSS, description){
-  
-  errMessage <- list()
-  
-  if(length(sport) != 1 || !sport %in% c('swim', 'bike', 'run')){
-    errMessage <- c(errMessage,
-                    "'sport' must be of length 1 and one of 'swim', 'bike', 'run'")
-  }
-  if(!is.na(TSS) && (length(metric) != 1 || !metric %in% c('power', 'HR', 'pace'))){
-    errMessage <- c(errMessage,
-                    "'metric' must be of length 1 and one of 'power', 'HR', 'pace'")
-  }
-  if(length(description) > 1){
-    errMessage <- c(errMessage,
-                    "'description' must be of length 0 (NULL) or 1")
-  }
-  if(length(TSS) != 1){
-    errMessage <- c(errMessage,
-                    "'TSS' must be of lenght 1")
-  }
-  if(!is.na(TSS) && !is.numeric(TSS)){
-    errMessage <- c(errMessage,
-                    "'TSS' must be numeric or NA")
-  }
-  if(is.numeric(TSS) && TSS < 0 ){
-    errMessage <- c(errMessage,
-                    "'TSS' must be >= 0")
-  }
-  
-  if(is.na(TSS)){
-    if (length(minTargetZ) != length(targetZ)){
-      errMessage <- c(errMessage,
-                      "'mintargetZ' and 'targetZ' must be of equal length")
-    }
-    if (metric == 'pace' && !is.character(targetZ)){
-      errMessage <- c(errMessage,
-                      "If metric is 'pace', targetZ must be character of format 'mm:ss'")
-    }
-    if (metric != 'pace' && !is.numeric(targetZ)){
-      errMessage <- c(errMessage,
-                      "If metric is 'power' or 'HR', targetZ must be numeric")
-    }
-    if (!is.na(targetZ) && is.numeric(targetZ)){
-      if (any(targetZ < 0)){
-        errMessage("'targetZ' must be always  >=0")
-      }
-    }
-  }
-  
-  if(is.na(TSS)){
-    if(class(userSettings) !=  'userSettings'){
-      errMessage <- c(errMessage,
-                      "'userSettings' must be an object of class 'userSettings'")
-    }
-    
-    availableMetrics <- slot(userSettings, 'settings')$metric[slot(userSettings, 'settings')$sport == sport]
-    if(!metric %in% availableMetrics && is.na(TSS)){
-      errMessage <- c(errMessage,
-                      'The metric used does not have a valid threshold associated in the userSettings and TSS is not given')
-    }
-  }
   
   errMessage <- paste0(errMessage, collapse = '. ')
   return(errMessage)

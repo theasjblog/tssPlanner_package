@@ -1,6 +1,7 @@
 context('TSS_calculation')
 
 test_that("TSS_is_Right",{
+  skip('TBC')
   expect_equal(tssPlanner:::getTSS(minTargetZ = 60, targetZ = 30, reference = 30, metric = 'HR'),
                list(TSS = 100,
                     IF = 1))

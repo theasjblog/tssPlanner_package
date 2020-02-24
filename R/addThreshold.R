@@ -28,15 +28,14 @@ addThreshold <- function(sport, metric, value, userSettings = NULL){
   }
   
   
-  # create userSettings is needed
+  # create userSettings if needed
   if(is.null(userSettings)){
     userSettings = new('userSettings')
   }
   
   #convert mm:ss to numeric
-  if(is.character(value)){
-    value <- strToMinDec(value)
-  }
+  value <- strToMinDec(value)
+  
   
   # get old Settings and remove possible duplicates of settings
   oldData <- slot(userSettings, 'settings')

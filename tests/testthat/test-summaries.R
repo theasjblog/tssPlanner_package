@@ -1,6 +1,7 @@
 context('summaries')
 
 test_that("get_summaries",{
+  skip('TBC')
   # userSettings
   newThreshold <- addThreshold(sport = 'bike', metric = 'HR', value = 55)
   newThreshold <- addThreshold(sport = 'run', metric = 'pace', value = '4:30',
@@ -45,6 +46,7 @@ test_that("get_summaries",{
 })
 
 test_that('summary_day', {
+  skip('TBC')
   #add a run threshold to settings
   mySettings <- addThreshold(sport = 'run', metric = 'pace', value = '4:30')
   
@@ -72,6 +74,7 @@ test_that('summary_day', {
 
 
 test_that('summary_week', {
+  skip('TBC')
   #add a run threshold to settings
   mySettings <- addThreshold(sport = 'run', metric = 'pace', value = '4:30')
   

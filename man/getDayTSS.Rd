@@ -4,6 +4,15 @@
 \alias{getDayTSS}
 \title{Get day TSS}
 \usage{
+getDayTSS(day)
+}
+\arguments{
+\item{day}{(dayWeek) A dayWeek object}
+}
+\description{
+Get day TSS
+}
+\examples{
 #add a run threshold to settings
 mySettings <- addThreshold(sport = 'run', metric = 'pace', value = '4:30')
 
@@ -20,11 +29,5 @@ newPlan <- storeSettings(mySettings)
 newPlan <- addSessionToPlan(weeklyPlan = newPlan, session = runSession,
 day = 'thursday')
 
-getDayTSS(slot(newPlan, 'thursday'))
-}
-\arguments{
-\item{day}{(dayWeek) A dayWeek object}
-}
-\description{
-Get day TSS
+getDayTSS(day = slot(newPlan, 'thursday'))
 }

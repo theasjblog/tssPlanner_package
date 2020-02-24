@@ -10,16 +10,8 @@ The individual training session
 \section{Slots}{
 
 \describe{
-\item{\code{sport}}{character of the sport}
-
-\item{\code{metric}}{The metric used to calcualte TSS for this session}
-
-\item{\code{TSS}}{numeric The session TSS}
+\item{\code{sessions}}{list of sessions in the brick session}
 
 \item{\code{description}}{A character description for the session}
-
-\item{\code{manualTSS}}{logical TRUE if the TSS used was provided by the user}
-
-\item{\code{sessionDetails}}{data.frame Details of each session interval}
 }}
 
