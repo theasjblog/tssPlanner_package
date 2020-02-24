@@ -3,3 +3,6 @@
 .Rhistory
 .RData
 .Ruserdata
+tssPlanner.Rcheck/
+tssPlanner*.tar.gz
+tssPlanner*.tgz
