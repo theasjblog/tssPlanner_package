@@ -7,8 +7,10 @@
 strToMinDec(inputStr)
 }
 \arguments{
-\item{inputStr}{(str) a string in the format mm:ss}
+\item{inputStr}{a vector of string or numeric}
 }
 \description{
-Convert a string to decimal
+Convert input to decimal. The input is
+either already numeric or a string. If a string, the
+format is either nn.nn or mm:ss
 }

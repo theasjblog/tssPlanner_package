@@ -49,12 +49,12 @@ First we set some user threshold values. Note that we will set reference values 
 ```{r userSettings}
 library('tssPlanner')
 
-#add a swim threshold to settings
+# add a swim threshold to settings
 mySettings <- addThreshold(sport = 'swim', metric = 'pace', value = '1:30')
-#add a FTP to settings
+# add a FTP to settings
 mySettings <- addThreshold(sport = 'bike', metric = 'power', value = 250,
                            userSettings = mySettings)
-#add a run threshold to settings
+# add a run threshold to settings
 mySettings <- addThreshold(sport = 'run', metric = 'pace', value = '4:30',
                            userSettings = mySettings)
 

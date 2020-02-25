@@ -3,16 +3,22 @@
 #' @param object (singleSportSession) An object of class session
 #' @export
 setMethod('summary', signature = 'singleSportSession', function(object){
-  text <- paste0('Session sport: ', slot(object, 'sport'),
-                 '\nTSS: ', round(slot(object, 'TSS'),digits = 0),
-                 '\nUser defined TSS: ', as.character(slot(object, 'manualTSS')))
+  
   
   details <- viewSessionDetails(object)
-  text <- paste0(
+  if (!is.null(details)){
+    text <- paste0('Session sport: ', slot(object, 'sport'),
+                   '\nTSS: ', round(slot(object, 'TSS'), digits = 0),
+                   '\nUser defined TSS: ', as.character(slot(object, 'manualTSS')))
+    text <- paste0(
       text,
       '\nTotal duration in minutes: ', sum(details$minutes),
       '\n\n'
     )
+  } else {
+    text <- 'Empty session'
+  }
+  
   
   return(list(text = text,
               details = details))
@@ -82,6 +88,7 @@ setMethod('summary', signature = 'weeklyPlan', function(object){
     for (i in slotNames(object)){
       day <- slot(object, i)
       if (class(day) == 'dayWeek'){
+        day <- cleanDay(day)
         idx <- idx + 1
         TSS <- getDayTSS(day)
         if (TSS > 0){

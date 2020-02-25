@@ -328,6 +328,7 @@ getWeekTSS <- function(weeklyPlan){
   TSS <- 0
   for (i in slotNames(weeklyPlan)){
     if (class(slot(weeklyPlan, i)) == 'dayWeek'){
+      slot(weeklyPlan, i) <- cleanDay(slot(weeklyPlan, i))
       TSS <- TSS + getDayTSS(slot(weeklyPlan, i))
     }
   }
@@ -363,6 +364,7 @@ getDayTSS <- function(day){
     stop('day must be an S4 object of class dayWeek')
   }
   
+  day <- cleanDay(day)
   sessions <- slot(day, 'sessions')
   
   TSS <- sum(unlist(
@@ -432,6 +434,7 @@ storeSettings <- function(userSettings, weeklyPlan = NULL){
     for (i in slotNames(weeklyPlan)){
       day <- slot(weeklyPlan, i)
       if (class(day) == 'dayWeek'){
+        day <- cleanDay(day)
         sessions <- slot(day, 'sessions')
         newSession <- lapply(sessions, function(d){
           dfSummary <- summary(d)
@@ -519,6 +522,7 @@ getMaxNumberSession <- function(weeklyPlan){
   nSessions <- 0
   for (i in slotNames(weeklyPlan)){
     if (class(slot(weeklyPlan, i)) == 'dayWeek'){
+      slot(weeklyPlan, i) <- cleanDay(slot(weeklyPlan, i))
       nSessions <- c(nSessions,
                      length(slot(slot(weeklyPlan, i), 'sessions')))
     }
@@ -555,6 +559,7 @@ tableOfTss <- function(weeklyPlan){
     for (i in slotNames(weeklyPlan)){
       day <- slot(weeklyPlan, i)
       if (class(day) == 'dayWeek'){
+        day <- cleanDay(day)
         sessions <- slot(day, 'sessions')
         if (length(sessions) > 0){
           WeekTSS[seq(1:length(sessions)), i] <- unlist(lapply(sessions, function(d){
@@ -616,6 +621,7 @@ getDataForPlot <- function(weeklyPlan){
   for (i in slotNames(weeklyPlan)){
     day <- slot(weeklyPlan, i)
     if (class(day) == 'dayWeek'){
+      day <- cleanDay(day)
       session <- slot(day, 'sessions')
       sessionSport <- unlist(lapply(session, function(d){getAllSports(slot(d, 'sessions'))}))
       sessionTSS <- unlist(lapply(session, function(d){getFullSessionTSS(slot(d, 'sessions'))}))
@@ -638,4 +644,33 @@ handle0Th <- function(th){
   }
   
   return (th)
+}
+
+#' @title cleanDay
+#' @description Clean a day from empty sessions
+#' @param dayWeek An object of class dayWeek
+#' @return An object of calss dayWeek without the emoty session that could be generated as a
+#' leftover of the create session 
+cleanDay <- function(dayWeek){
+  
+  for (i in seq_len(length(slot(dayWeek, 'sessions')))){
+    idx <- NULL
+    for (ii in seq_len(length(slot(slot(dayWeek, 'sessions')[[i]], 'sessions')))){
+      if (is.null(slot(slot(slot(dayWeek, 'sessions')[[i]], 'sessions')[[ii]], 'sport'))){
+        idx <- c(idx, ii)
+      }
+    }
+    if (!is.null(idx)){
+      slot(slot(dayWeek, 'sessions')[[i]], 'sessions')[idx] <- NULL
+    }
+    if(length(slot(slot(dayWeek, 'sessions')[[i]], 'sessions')) == 0){
+      slot(dayWeek, 'sessions')[[i]] <- NULL
+    }
+  }
+  
+  if(length(slot(dayWeek, 'sessions')) == 0){
+    slot(dayWeek, 'sessions') <- list()
+  }
+  
+  return(dayWeek)
 }

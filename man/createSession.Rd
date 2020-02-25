@@ -9,8 +9,8 @@ createSession(
   metrics = list(NA),
   minTargetZs = list(NA),
   targetZs = list(NA),
-  userSettings = NA,
   TSS = list(NA),
+  userSettings = NULL,
   description = ""
 )
 }
@@ -23,10 +23,10 @@ createSession(
 
 \item{targetZs}{(list) The session intensity for the minutes specified. Numeric for type = bike, character otherwise}
 
-\item{userSettings}{(userSettings) an object of class userSettings}
-
 \item{TSS}{(list) the known TSS for the session. If this is given (and is not NA (default))
 it will be used to set the session TSS, even if intervals are given.}
+
+\item{userSettings}{(userSettings) an object of class userSettings}
 
 \item{description}{(character) Optional session description. If NULL, it will be set to the type}
 }
