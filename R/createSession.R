@@ -28,7 +28,7 @@ createSession <- function(sports, metrics = list(NA),
                           userSettings = NULL,
                           description = ''){
   
-  if(!missing(userSettings) && class(userSettings) != 'userSettings'){
+  if(!is.null(userSettings) && class(userSettings) != 'userSettings'){
     stop('User settings must be of class "userSettings')
   }
   if(length(description) !=1 ){
