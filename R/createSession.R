@@ -106,6 +106,8 @@ createSession <- function(sports, metrics = list(NA),
                                         TSS = thisTSS,
                                         manualTSS = manualTSS)
     
+    zones <- getSessionZones(sessionDetails, userSettings)
+    
     # create and populate session
     newSession <- new('singleSportSession')
     slot(newSession, 'metric') <- thisMetric
@@ -113,6 +115,7 @@ createSession <- function(sports, metrics = list(NA),
     slot(newSession, 'sport') <- thisSport
     slot(newSession, 'manualTSS') <- manualTSS
     slot(newSession, 'sessionDetails') <-sessionDetails
+    slot(newSession, 'zones') <- zones
     
     return(newSession)
   })

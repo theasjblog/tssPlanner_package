@@ -19,5 +19,7 @@ The individual training session
 \item{\code{manualTSS}}{logical TRUE if the TSS used was provided by the user}
 
 \item{\code{sessionDetails}}{data.frame Details of each session interval}
+
+\item{\code{zones}}{data.frame the time in training zones}
 }}
 

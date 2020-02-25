@@ -674,3 +674,62 @@ cleanDay <- function(dayWeek){
   
   return(dayWeek)
 }
+
+#' @title getThreshold
+#' @description get the threshold valie from the user settings for the specified sport/metric
+#' @param sport (character) The sport, i.e. 'bike'
+#' @param metric (character) The metric, i.e. 'power'
+#' @param userSettings (userSettings) The useSettings objects
+getThreshold <- function(sport, metric, userSettings){
+  res <- slot(userSettings, 'settings')
+  res <- res[which(res$sport == sport & res$metric == metric),]
+  if (nrow(res) == 0){
+    return(NULL)
+  } else {
+    return(res$value)
+  }
+}
+
+#' @title getSessionZones
+#' @description Get the time in zones for a single session
+#' @param sessionDetails (data.frame) The sesisonDetails data frame of a single session
+#' @param userSettings (userSettings) The userSettings object
+#' @return A data.frame of times in zones. NULL if the time in zones cannot be calculated
+getSessionZones <- function(sessionDetails, userSettings){
+  
+  if(nrow(sessionDetails) == 0 || is.null(userSettings)){
+    return(data.frame())
+  }
+  zone <- NULL
+  time <- NULL
+  
+  for (i in 1:nrow(sessionDetails)){
+    if(!sessionDetails$user_TSS[i]){
+      zones <- getZones(sessionDetails$sport[i],
+                        sessionDetails$metric[i])
+      reference <- getThreshold(sport = sessionDetails$sport[i],
+                                             metric = sessionDetails$metric[i],
+                                             userSettings = mySettings)
+      if (is.null(reference)|| is.null(zones)){
+        return(data.frame())
+      }
+      thPerc <- 100*sessionDetails$threshold[i]/reference
+      zone <- c(zone, as.character(zones$zName[which(thPerc >= zones$minVal & thPerc < zones$maxVal)]))
+      time <- c(time, sessionDetails$minutes[i])
+    }
+  }
+  
+  res <- data.frame(zone  = zone,
+                    time = time)
+  res <- split(res, res$zone)
+  
+  res <- lapply(res, function(d){
+    sum(d$time)
+  })
+  
+  resDf <- bind_rows(res)
+  resDf$zone <- names(res)
+  
+  return(as.data.frame(resDf))
+}
+

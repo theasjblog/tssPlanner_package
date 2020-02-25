@@ -13,18 +13,21 @@ setClass('userSettings',
 #' @slot TSS numeric The session TSS
 #' @slot manualTSS logical TRUE if the TSS used was provided by the user
 #' @slot sessionDetails data.frame Details of each session interval
+#' @slot zones data.frame the time in training zones
 setClass('singleSportSession',
          representation(sport= 'character',
                         metric = 'character',
                         sessionDetails = 'data.frame',
                         TSS = 'numeric',
-                        manualTSS = 'logical'
+                        manualTSS = 'logical',
+                        zones = 'data.frame'
                         ),
          prototype(sport = NULL,
                    metric = NULL,
                    sessionDetails = NULL,
                    TSS = NULL,
-                   manualTSS = FALSE
+                   manualTSS = FALSE,
+                   zones = NULL
                    )
 )
 
