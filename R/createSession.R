@@ -66,8 +66,9 @@ createSession <- function(sports, metrics = list(NA),
     if(any(is.na(thisTSS))){
       #need to find the threshold for the combination of sport/metric
       if (nrow(reference) != 1){
-        stop(paste0('Threshold not found for the combination ',
+        warning(paste0('Threshold not found for the combination ',
                     thisSport, '/', thisMetric))
+        return(new('singleSportSession'))
       }
       
       thisMinTargetZ <- strToMinDec(thisMinTargetZ)

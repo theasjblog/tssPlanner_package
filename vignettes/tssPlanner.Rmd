@@ -58,7 +58,7 @@ mySettings <- addThreshold(sport = 'bike', metric = 'power', value = 250,
 mySettings <- addThreshold(sport = 'run', metric = 'pace', value = '4:30',
                            userSettings = mySettings)
 
-kable(summary(mySettings))
+kable(summary(mySettings), row.names = FALSE)
 
 ```
 
@@ -84,7 +84,7 @@ runSession <- createSession(sport = list('run'),
                             userSettings =  mySettings,
                             description = 'making a run test session')
 
-kable(summary(runSession))
+kable(summary(runSession), row.names = FALSE)
 ```
 
 
@@ -165,7 +165,7 @@ brickSessions <- createSession(sports = list('run',
 newPlan <- addSessionToPlan(weeklyPlan = newPlan,
                             session = brickSessions,
                             day = 'sunday')
-kable(summary(brickSessions))
+kable(summary(brickSessions), row.names = FALSE)
 ```
 
 ## Remove a session
@@ -234,7 +234,7 @@ cat(summary(newPlan))
                           
 ## Change user settings
 
-We can change user settings even after we calculated the TSS for our plan. All we need to do is to create new settings and place them in our plan. The package will automatically recalculate all the TSS in the plan **WITH THE EXCEPTION OF THE SESSION THAT WERE ADDED USING MANUAL TSS**.
+We can change user settings even after we calculated the TSS for our plan. All we need to do is to create new settings and place them in our plan. The package will automatically recalculate all the TSS in the plan **WITH THE EXCEPTION OF THE SESSION THAT WERE ADDED USING MANUAL TSS. BRICK SESSION MIGHT BECOME SINGLE SPORT SESSIONS**.
 
 In this example we will change the FTP from 250 to 280
 
@@ -253,7 +253,7 @@ newSettings <- addThreshold(sport = 'bike', metric = 'power', value = 280, userS
 newPlan <- storeSettings(userSettings = newSettings, weeklyPlan = newPlan)
 
 #Let's check the change
-kable(summary(slot(newPlan, 'userSettings')))
+kable(summary(slot(newPlan, 'userSettings')), row.names = FALSE)
 
 #and the change in TSS for the plan
 cat(summary(newPlan))
@@ -261,7 +261,25 @@ cat(summary(newPlan))
 
 Note how the TSS has changed for the bike session on Wednesday, as we gave target training zones, but not for the bike session on Friday which we created using a manual TSS.
 
+In the below example we see what happens if we remove from the user settings the bike power:
 
+```{r changeSettings2, warning=FALSE}
+# manually remove the bike power data from the user settings
+newSettings <- slot(newPlan, 'userSettings')
+slot(newSettings, 'settings') <- slot(newSettings, 'settings')[-1, ]
+
+#and now we can put back our updated settings in the weekly plan:
+newPlan2 <- storeSettings(userSettings = newSettings, weeklyPlan = newPlan)
+
+#Let's check the change to the settings
+kable(summary(slot(newPlan2, 'userSettings')), row.names = FALSE)
+
+#and the change in TSS for the plan
+cat(summary(newPlan2))
+```
+
+
+Note how the bike only sessions that were defined by calcualting the TSS have disappeared from the plan (Wednsday), while the Sunday brick session is now just a run session, since the TSS for the bike cannot be calculated anymore (the session description has not been changed).
 
 ## Display a table or a plot the weekly TSS plan
 
@@ -285,7 +303,7 @@ newPlan <- addSessionToPlan(newPlan, session = createSession(sport =list('run'),
 
 weeklyTable <- tableOfTss(newPlan)
 
-kable(weeklyTable)
+kable(weeklyTable, row.names = FALSE)
 ```
 
 ### Plot
