@@ -713,7 +713,12 @@ getSessionZones <- function(sessionDetails, userSettings){
       if (is.null(reference)|| is.null(zones)){
         return(data.frame())
       }
-      thPerc <- 100*sessionDetails$threshold[i]/reference
+      if(sessionDetails$metric[i] == 'pace'){
+        thPerc <- 100*reference/sessionDetails$target[i]
+      } else {
+        thPerc <- 100*sessionDetails$target[i]/reference
+      }
+      
       zone <- c(zone, as.character(zones$zName[which(thPerc >= zones$minVal & thPerc < zones$maxVal)]))
       time <- c(time, sessionDetails$minutes[i])
     }
@@ -721,15 +726,150 @@ getSessionZones <- function(sessionDetails, userSettings){
   
   res <- data.frame(zone  = zone,
                     time = time)
-  res <- split(res, res$zone)
+  if(nrow(res) > 0){
+    res <- formatZones(res)
+  }
+    
   
-  res <- lapply(res, function(d){
-    sum(d$time)
-  })
-  
-  resDf <- bind_rows(res)
-  resDf$zone <- names(res)
-  
-  return(as.data.frame(resDf))
+  return(res)
 }
 
+#' @title formatZones
+#' @description Function to summarize the zones by zone name
+#' @param zones A dataframe with 2 columns: zone (character) and time (numeric)
+#' @return a data.frame with xzones suummarized by name
+formatZones <- function(zones){
+  res <- split(zones, zones$zone)
+  
+  resDf <- data.frame()
+  
+  for (i in 1:length(res)){
+    resDf <- rbind(resDf,
+                   data.frame(time = sum(res[[i]]$time),
+                              zone = names(res)[i]))
+  }
+  
+  return(resDf)
+}
+
+
+#' @title sessisonZones
+#' @description function to get the total times in zones for a training session
+#' @param object S4 object of class 'session'
+#' @return A dataframe of times in zones if it can be calcualted, NULL otherwise 
+sessionZones <- function(object){
+  res <- data.frame()
+  for (i in 1:length(slot(object, 'sessions'))){
+    zones <- slot(slot(object, 'sessions')[[i]], 'zones')
+    if(nrow(zones) > 0){
+      res <- rbind(res, zones)
+    }
+  }
+  if(nrow(res) > 0){
+    colnames(res) <- c('time', 'zone')
+    res <- formatZones(res)
+    return(res)
+  } else {
+    return(NULL)
+  }
+}
+
+
+#' @title dayZones
+#' @description function to get the total times in zones for a day
+#' @param object S4 object of class 'dayWeek'
+#' @return A dataframe of times in zones if it can be calcualted, NULL otherwise 
+dayZones <- function(object){
+  if(length(slot(object, 'sessions')) == 0){
+    return(NULL)
+  }
+  
+  res <- data.frame()
+  for (i in 1:length(slot(object, 'sessions'))){
+    zones <- sessionZones(slot(object, 'sessions')[[i]])
+    if (!is.null(zones)){
+      res <- rbind(res, zones)
+    }
+  }
+  
+  if(nrow(res) > 0){
+    colnames(res) <- c('time', 'zone')
+    res <- formatZones(res)
+    return(res)
+  } else {
+    return(NULL)
+  }
+}
+
+#' @title weekZones
+#' @description function to get the total times in zones for a week
+#' @param object S4 object of class 'weeklyPlan'
+#' @return A dataframe of times in zones if it can be calcualted, NULL otherwise 
+weekZones <- function(object){
+  res <- data.frame()
+  for (i in slotNames(object)){
+    day <- slot(object, i)
+    if (class(day) == 'dayWeek'){
+      zones <- dayZones(day)
+      if (!is.null(zones)){
+        res <- rbind(res, zones)
+      }
+    }
+  }
+  if(nrow(res) > 0){
+    colnames(res) <- c('time', 'zone')
+    res <- formatZones(res)
+    return(res)
+  } else {
+    return(NULL)
+  }
+}
+
+
+#' @title getZonesPercentages
+#' @description function to get the total times in zones for a specified object
+#' 'session', 'dayWeek' or 'weeklyPlan'
+#' @param object S4 object of class 'session', 'dayWeek' or 'weeklyPlan'
+#' @return A dataframe of times and percentage of times in zones if it
+#' can be calcualted, NULL otherwise 
+#' @export
+getZonesPercentages <- function(object){
+  res <- switch(class(object),
+         'session' = sessionZones(object),
+         'dayWeek' = dayZones(object),
+         weeklyPlan = weekZones(object),
+         stop('Invalid object'))
+  if(!is.null(res)){
+    res$perc <- 100*res$time/sum(res$time)
+  }
+  
+  return(res)
+  
+}
+
+#' @title plotTimeInZone
+#' @description Make a barchart of the percentage of time spent in training zones
+#' @param object S4 object of class 'session', 'dayWeek' or 'weeklyPlan'
+#' @return A ggplot 
+#' @export
+plotTimeInZone <- function(object){
+  
+  zones <- getZonesPercentages(object)
+  
+  if(is.null(zones)){
+    return(NULL)
+  }
+  
+  resDf <- data.frame(zone = as.factor(c('0', '1', '2' , 'X', '3', 'Y', '4', '5')),
+                      perc = 0)
+  for (i in 1:nrow(zones)){
+    idx <- which(as.character(resDf$zone) == zones$zone[i])
+    resDf$perc[idx] <- zones$perc[i]
+  }
+  p <- ggplot(resDf, aes(x=zone, y=perc, fill=zone))+
+    geom_bar(width = 1, stat = "identity") +
+    ylab('%') +
+    ggtitle('Time in zone')
+  p
+  
+}

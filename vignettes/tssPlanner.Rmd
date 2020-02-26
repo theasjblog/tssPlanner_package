@@ -312,3 +312,128 @@ kable(weeklyTable, row.names = FALSE)
 plot(newPlan)
 ```
 
+
+# Training zones
+
+Matt Fitzgerald advocates for plannig trainig session using the 80/20 Pareto's principle. In a nutshell, your session should be spent for 80% of the time at low intensity, and at 20% of the time at high intensity. For more details look [here](https://www.8020endurance.com/).
+
+The `tssPlanner` includes a fuinctionality to get how much time you spend for each session, day or week in each of the zones defined by Matt. In this section we will see how to use them.
+
+First of all, the time in zone can be calculated only for the sessions defined using a calculated TSS, rather than a known one. The reason for this is that they require to know what your threshold is for a particular combination of sport and metric.
+
+Let's start by defining some user settings.
+
+```{r zonesSettings}
+# add a swim threshold to settings
+mySettings <- addThreshold(sport = 'swim', metric = 'pace', value = '1:30')
+# add a FTP to settings
+mySettings <- addThreshold(sport = 'bike', metric = 'power', value = 250,
+                           userSettings = mySettings)
+# add a run threshold to settings
+mySettings <- addThreshold(sport = 'run', metric = 'pace', value = '4:30',
+                           userSettings = mySettings)
+```
+
+
+Let's define a few sessions. Some will use manual TSS, others will use calcualted TSS.
+
+```{r zonesSessions}
+newPlan <- storeSettings(mySettings)
+
+# a running sesison using calcualted TSS. This will be an easy session
+runSession <- createSession(sport = list('run'),
+                            metric = list('pace'),
+                            minTargetZ = list(c(40, 5)),
+                            targetZ = list(c('5:30', '4:30')),
+                            TSS = list(NA),
+                            userSettings =  mySettings,
+                            description = 'making a run test session')
+
+# a hard bike session
+bikeSession <- createSession(sport = list('bike'),
+                            metric = list('power'),
+                            minTargetZ = list(60),
+                            targetZ = list(300),
+                            TSS = list(NA),
+                            userSettings =  mySettings,
+                            description = 'making a run test session')
+# a manual swim swession
+swimSession <- createSession(sport = list('swim'),
+                             TSS = list(80),
+                             description = 'making a run test session')
+
+# a brick session, using a mix of hard and easy and even manual
+brickSession <- createSession(sports = list('run',
+                                               'bike',
+                                               'swim'),
+                               metrics = list('pace',
+                                                'power',
+                                                NA),
+                               minTargetZs = list(45,
+                                                  90,
+                                                  NA),
+                               targetZs = list('3:30',#hard run
+                                               100, #easy bike
+                                               NA),
+                               TSS = list(NA,
+                                          NA,
+                                          100),# manul swim
+                               userSettings = mySettings,
+                               description = 'a brick session')
+
+#add the sessions to the plan
+newPlan <- addSessionToPlan(newPlan,
+                            session = runSession,
+                            day = 'monday')
+newPlan <- addSessionToPlan(newPlan,
+                            session = bikeSession,
+                            day = 'tuesday')
+newPlan <- addSessionToPlan(newPlan,
+                            session = swimSession,
+                            day = 'wednesday')
+newPlan <- addSessionToPlan(newPlan,
+                            session = brickSession,
+                            day = 'thursday')
+
+```
+
+
+## Visualize results as tables
+
+Now that everything is ready, we can use the `getZonesPercentages()` function to inspect how much time we spend in each zone. A few example of the usage of the function are reported below.
+
+```{r zonesTables}
+#for the brick session
+brickSessionZones <- getZonesPercentages(brickSession)
+kable(brickSessionZones, row.names = FALSE, digits = 2)
+
+# for 'monday'
+mondaySessionZones <- getZonesPercentages(slot(newPlan, 'monday'))
+kable(mondaySessionZones, row.names = FALSE, digits = 2)
+
+# for the whole week
+weekSessionZones <- getZonesPercentages(newPlan)
+kable(weekSessionZones, row.names = FALSE, digits = 2)
+```
+
+
+## Visualize results as plots
+
+Bar charts can also be used to inspect how much time is spent in each trainnig zone.
+
+```{r plotZones}
+#for the run session
+plotTimeInZone(runSession)
+
+# for 'monday'
+plotTimeInZone(slot(newPlan, 'thursday'))
+
+# for the whole week
+plotTimeInZone(newPlan)
+```
+
+## Inspect the zones definition
+
+The xones used by this tool are the one defined by Matt Fitzgerald [here](http://8020endurance.com/8020-zone-calculator/).
+
+The zones can be inspected using the function `getAllZones()`. The output is a list of zones divided by metric and sport.

@@ -1,6 +1,7 @@
 #' @title getAllZones
 #' @description Contains the definition of training zones according to Matt Fitzgerald https://www.8020endurance.com/8020-zone-calculator/
 #' @return A list of the zones
+#' @export
 getAllZones <- function(){
   zones <- list(list(sport = c('run', 'bike'),
                      metric = 'HR',
@@ -27,6 +28,8 @@ getAllZones <- function(){
                           zName = c('0', '1', '2', 'X', '3', 'Y', '4', '5'))
   )
   )
+  
+  return(zones)
 }
 
 #' @title getZones
