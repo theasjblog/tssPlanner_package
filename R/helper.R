@@ -709,7 +709,7 @@ getSessionZones <- function(sessionDetails, userSettings){
                         sessionDetails$metric[i])
       reference <- getThreshold(sport = sessionDetails$sport[i],
                                              metric = sessionDetails$metric[i],
-                                             userSettings = mySettings)
+                                             userSettings = userSettings)
       if (is.null(reference)|| is.null(zones)){
         return(data.frame())
       }
