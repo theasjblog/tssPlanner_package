@@ -870,6 +870,6 @@ plotTimeInZone <- function(object){
     geom_bar(width = 1, stat = "identity") +
     ylab('%') +
     ggtitle('Time in zone')
-  p
+  print(p)
   
 }
