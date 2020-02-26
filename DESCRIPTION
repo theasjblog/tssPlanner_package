@@ -1,7 +1,7 @@
 Package: tssPlanner
 Type: Package
 Title: Plan a training week based on TSS
-Version: 0.1.2
+Version: 0.1.3
 Author: Adrian Joseph
 Maintainer: Adrian Joseph <tequilacanaria@hotmail.it>
 Description: Use Joe Friel and Martt Fitzgerald principles to plan a training week based on TSS and 80/20 effort.
