@@ -866,10 +866,21 @@ plotTimeInZone <- function(object){
     idx <- which(as.character(resDf$zone) == zones$zone[i])
     resDf$perc[idx] <- zones$perc[i]
   }
-  p <- ggplot(resDf, aes(x=zone, y=perc, fill=zone))+
+  
+  resDf %>% 
+    dplyr::mutate(zone = factor(zone,
+                                levels = c('0', '1', '2' , 'X', '3', 'Y', '4', '5'),
+                                ordered = TRUE))
+  
+  p <- ggplot(resDf, aes(x=factor(zone,
+                                  levels = c('0', '1', '2' , 'X', '3', 'Y', '4', '5'),
+                                  ordered = TRUE)
+                         , y=perc, fill=zone))+
     geom_bar(width = 1, stat = "identity") +
-    ylab('%') +
-    ggtitle('Time in zone')
+    ylab('Time [%]') +
+    ggtitle('Time in zone') + 
+    theme(legend.position = "none")
+  p$labels$x <- 'Zones'
   print(p)
   
 }
