@@ -859,7 +859,7 @@ plotTimeInZone <- function(object){
   if(is.null(zones)){
     par(mar = c(0,0,0,0))
     plot(c(0, 1), c(0, 1), ann = F, bty = 'n', type = 'n', xaxt = 'n', yaxt = 'n')
-    text(x = 0.5, y = 0.5, 'Nothing to plot', 
+    text(x = 0.5, y = 0.5, 'No training zones \n to plot', 
          cex = 1.6, col = "black")
   } else {
     resDf <- data.frame(zone = as.factor(c('0', '1', '2' , 'X', '3', 'Y', '4', '5')),
