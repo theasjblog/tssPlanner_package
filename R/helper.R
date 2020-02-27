@@ -759,6 +759,9 @@ formatZones <- function(zones){
 #' @return A dataframe of times in zones if it can be calcualted, NULL otherwise 
 sessionZones <- function(object){
   res <- data.frame()
+  if(length(slot(object, 'sessions')) == 0){
+    return(NULL)
+  }
   for (i in 1:length(slot(object, 'sessions'))){
     zones <- slot(slot(object, 'sessions')[[i]], 'zones')
     if(nrow(zones) > 0){
@@ -837,7 +840,7 @@ getZonesPercentages <- function(object){
   res <- switch(class(object),
          'session' = sessionZones(object),
          'dayWeek' = dayZones(object),
-         weeklyPlan = weekZones(object),
+         'weeklyPlan' = weekZones(object),
          stop('Invalid object'))
   if(!is.null(res)){
     res$perc <- 100*res$time/sum(res$time)
