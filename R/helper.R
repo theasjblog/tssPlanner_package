@@ -857,30 +857,35 @@ plotTimeInZone <- function(object){
   zones <- getZonesPercentages(object)
   
   if(is.null(zones)){
-    return(NULL)
-  }
-  
-  resDf <- data.frame(zone = as.factor(c('0', '1', '2' , 'X', '3', 'Y', '4', '5')),
-                      perc = 0)
-  for (i in 1:nrow(zones)){
-    idx <- which(as.character(resDf$zone) == zones$zone[i])
-    resDf$perc[idx] <- zones$perc[i]
-  }
-  
-  resDf %>% 
-    dplyr::mutate(zone = factor(zone,
-                                levels = c('0', '1', '2' , 'X', '3', 'Y', '4', '5'),
-                                ordered = TRUE))
-  
-  p <- ggplot(resDf, aes(x=factor(zone,
+    par(mar = c(0,0,0,0))
+    plot(c(0, 1), c(0, 1), ann = F, bty = 'n', type = 'n', xaxt = 'n', yaxt = 'n')
+    text(x = 0.5, y = 0.5, 'Nothing to plot', 
+         cex = 1.6, col = "black")
+  } else {
+    resDf <- data.frame(zone = as.factor(c('0', '1', '2' , 'X', '3', 'Y', '4', '5')),
+                        perc = 0)
+    for (i in 1:nrow(zones)){
+      idx <- which(as.character(resDf$zone) == zones$zone[i])
+      resDf$perc[idx] <- zones$perc[i]
+    }
+    
+    resDf %>% 
+      dplyr::mutate(zone = factor(zone,
                                   levels = c('0', '1', '2' , 'X', '3', 'Y', '4', '5'),
-                                  ordered = TRUE)
-                         , y=perc, fill=zone))+
-    geom_bar(width = 1, stat = "identity") +
-    ylab('Time [%]') +
-    ggtitle('Time in zone') + 
-    theme(legend.position = "none")
-  p$labels$x <- 'Zones'
-  print(p)
+                                  ordered = TRUE))
+    
+    p <- ggplot(resDf, aes(x=factor(zone,
+                                    levels = c('0', '1', '2' , 'X', '3', 'Y', '4', '5'),
+                                    ordered = TRUE)
+                           , y=perc, fill=zone))+
+      geom_bar(width = 1, stat = "identity") +
+      ylab('Time [%]') +
+      ggtitle('Time in zone') + 
+      theme(legend.position = "none")
+    p$labels$x <- 'Zones'
+    print(p)
+  }
+  
+  
   
 }
