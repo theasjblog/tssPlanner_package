@@ -33,7 +33,7 @@ getAllZones <- function(){
 }
 
 #' @title getZones
-#' @description Get the specific datavrame of zones for a desired combination
+#' @description Get the specific dataframe of zones for a desired combination
 #' of sport an metric. If the combination does not exist, the function returns NULL
 #' @param sport (character) The sport, i.e. bike
 #' @metric (character) The metric, i.e. power

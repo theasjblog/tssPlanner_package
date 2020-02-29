@@ -87,6 +87,7 @@ getTSS <- function(minTargetZ, targetZ, reference, metric){
                'power' = targetZ/reference,
                'HR' = targetZ/reference,
                'pace' = reference/targetZ,
+               'percentage' = targetZ/reference,
                stop('Unkown type'))
   
   
@@ -442,13 +443,9 @@ storeSettings <- function(userSettings, weeklyPlan = NULL){
           
           args <- lapply(dfSummary, function(x){
             x$TSS[!x$user_TSS] <- NA
+            targets <- NULL
             for (ii in 1:nrow(x)){
-              targets <- NULL
-              if (!is.na(x$metric[ii]) && x$metric[ii] == 'pace'){
-                targets <- c(targets, convertTargezToMinSec(x$target[ii]))
-              } else {
-                targets <- c(targets, x$target[ii])
-              }
+              targets <- c(targets, x$target[ii])
             }
             
             return(
@@ -844,6 +841,26 @@ getZonesPercentages <- function(object){
          stop('Invalid object'))
   if(!is.null(res)){
     res$perc <- 100*res$time/sum(res$time)
+    #custom sort
+    zones <- res$zone
+    desiredOrder <- c('1' = '0',
+                      '2' = '1',
+                      '3' = '2',
+                      '4' = 'X',
+                      '5' = '3',
+                      '6' = 'Y',
+                      '7' = '4',
+                      '8' = '5')
+    idx <- NULL
+    for (i in zones){
+      if(i %in% desiredOrder){
+        idx <- c(idx, names(desiredOrder)[desiredOrder == i])
+      }
+    }
+    idx <- as.numeric(idx)
+    res$idx <- idx
+    res <- res %>% arrange(idx)
+    res$idx <- NULL
   }
   
   return(res)
