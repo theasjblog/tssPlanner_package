@@ -13,6 +13,6 @@ getZones(sport, metric)
 A dataframe if the combination sport/metric exists, NULL otherwise
 }
 \description{
-Get the specific datavrame of zones for a desired combination
+Get the specific dataframe of zones for a desired combination
 of sport an metric. If the combination does not exist, the function returns NULL
 }

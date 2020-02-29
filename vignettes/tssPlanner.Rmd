@@ -168,6 +168,26 @@ newPlan <- addSessionToPlan(weeklyPlan = newPlan,
 kable(summary(brickSessions), row.names = FALSE)
 ```
 
+
+## What if you do not know a threshold, but want to estimate TSS anyway?
+
+Beside using manual TSS, serssions can also be defined using percentage of estimated effort.
+
+```{r percentageTSS}
+percSession <- createSession(sport = list('bike'),
+                             metric = list('percentage'),
+                             minTargetZ = list(45),
+                             targetZ = list(80),# 80% of perceived effort
+                             userSettings = slot(newPlan,
+                                            'userSettings'),
+                             description = 'making a bike test session')
+
+newPlan <- addSessionToPlan(newPlan, session = percSession,
+                            day = 'monday')
+
+summary(percSession)
+```
+
 ## Remove a session
 
 A session can be removed with the function `deleteSession()`. Let's delete the Friday session. Note that you must specify which session you intend to delete.

@@ -64,12 +64,17 @@ createSession <- function(sports, metrics = list(NA),
     
     # TSS not given: calculate it
     if(any(is.na(thisTSS))){
+      if (thisMetric == 'percentage'){
+        reference <- data.frame(value = 100)
+
+      }
       #need to find the threshold for the combination of sport/metric
       if (nrow(reference) != 1){
         warning(paste0('Threshold not found for the combination ',
                     thisSport, '/', thisMetric))
         return(new('singleSportSession'))
       }
+      
       
       thisMinTargetZ <- strToMinDec(thisMinTargetZ)
       thisTargetZ <- strToMinDec(thisTargetZ)
