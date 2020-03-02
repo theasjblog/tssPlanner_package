@@ -436,23 +436,6 @@ weekSessionZones <- getZonesPercentages(newPlan)
 kable(weekSessionZones, row.names = FALSE, digits = 2)
 ```
 
-# Export sessions details to file
-
-It can be handy to have a printout of your sessions detials, so that you can bring it with you by the track or wherever you train. To get a `csv` with a table summary, use the following:
-
-```{r exportSummary}
-tableSummary <- exportWeekDetails(newPlan)
-
-kable(tableSummary)
-```
-
-This will create a table as above. The table can then be written to file using base R functions. For instance:
-
-```{r exportSummarySave, eval=FALSE}
-write.table(tableSummary, file = "sessions_summary.csv", sep = ",",
-              row.names = FALSE, col.names = TRUE)
-```
-
 ## Visualize results as plots
 
 Bar charts can also be used to inspect how much time is spent in each trainnig zone.
@@ -473,3 +456,21 @@ plotTimeInZone(newPlan)
 The xones used by this tool are the one defined by Matt Fitzgerald [here](http://8020endurance.com/8020-zone-calculator/).
 
 The zones can be inspected using the function `getAllZones()`. The output is a list of zones divided by metric and sport.
+
+# Export sessions details to file
+
+It can be handy to have a printout of your sessions detials, so that you can bring it with you by the track or wherever you train. To get a `csv` with a table summary, use the following:
+
+```{r exportSummary}
+tableSummary <- exportWeekDetails(newPlan)
+
+kable(tableSummary)
+```
+
+This will create a table as above. The table can then be written to file using base R functions. For instance:
+
+```{r exportSummarySave, eval=FALSE}
+write.table(tableSummary, file = "sessions_summary.csv", sep = ",",
+              row.names = FALSE, col.names = TRUE)
+```
+
